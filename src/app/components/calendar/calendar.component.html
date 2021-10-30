@@ -1,0 +1,16 @@
+<p-dialog header="Inserisci un evento" [(visible)]="display" [modal]="true" position="top">
+  <ng-template pTemplate="header">
+    Header content here
+  </ng-template>
+  <ng-template pTemplate="content">
+    content here
+  </ng-template>
+  <ng-template pTemplate="footer">
+    <button pButton type="button" label="Salva" (click)="salvaEvento()"></button>
+    <button pButton type="button" label="Annulla" class="p-button-danger" (click)="closeDialog()"></button>
+  </ng-template>
+
+</p-dialog>
+
+
+<full-calendar [options]="calendarOptions" #calendar></full-calendar>
