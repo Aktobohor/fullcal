@@ -13,6 +13,11 @@ import {OverlayPanelModule} from "primeng/overlaypanel";
 import {ButtonModule} from "primeng/button";
 import {DialogModule} from "primeng/dialog";
 import {HttpClientModule} from "@angular/common/http";
+import {FormsModule} from "@angular/forms";
+import {InputNumberModule} from "primeng/inputnumber";
+import {RadioButtonModule} from "primeng/radiobutton";
+import {CalendarModule} from "primeng/calendar";
+
 
 
 // @ts-ignore
@@ -31,6 +36,7 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
   ],
   imports: [
     BrowserModule,
+    HttpClientModule,
     BrowserAnimationsModule,
     AppRoutingModule,
     FullCalendarModule,
@@ -38,7 +44,11 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
     ButtonModule,
     FullCalendarModule,
     DialogModule,
-    HttpClientModule
+    FormsModule,
+    InputNumberModule,
+    RadioButtonModule,
+    CalendarModule
+
   ],
   providers: [],
   bootstrap: [AppComponent]

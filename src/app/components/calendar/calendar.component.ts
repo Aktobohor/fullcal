@@ -3,8 +3,21 @@ import {CalendarOptions, formatDate, FullCalendarComponent} from "@fullcalendar/
 import RRule from "rrule";
 import {observable, Observable, throwError} from 'rxjs';
 import { catchError, retry } from 'rxjs/operators';
-import { HttpClient } from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
+import {InputNumberModule} from 'primeng/inputnumber';
 
+const httpOptions = {
+  headers: new HttpHeaders({
+    'Content-Type':  'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
+  })
+};
+
+interface Structure {
+  id: number,
+  idQuestionary: number
+}
 
 @Component({
   selector: 'app-calendar',
@@ -12,16 +25,24 @@ import { HttpClient } from '@angular/common/http';
   styleUrls: ['./calendar.component.scss']
 })
 
-
 export class CalendarComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
-
-  constructor(private http: HttpClient) { }
-
-  res = "";
   today = "";
   display: boolean = false;
   selectedDate?: Date;
+  a? : Array<Structure>;
+  endInstance?: string;
+  date_picked?: Date;
+  minDate?: Date;
+  maxDate?: Date;
+  invalidDates?: Array<Date>;
+  disableDP: boolean = false;
+  disableOcc: boolean = false;
+  repetitionNumber: number = 1;
+  occurrencyNumber: number = 1;
+
+
+  constructor(private http: HttpClient) {  }
 
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
@@ -39,8 +60,10 @@ export class CalendarComponent implements OnInit {
     weekends: false // initial value
   };
 
+
   ngOnInit(): void {
-    console.log("inti1");
+    this.unlockElements();
+
     let str = formatDate(new Date(), {
       hour: 'numeric',
       minute: '2-digit',
@@ -48,6 +71,25 @@ export class CalendarComponent implements OnInit {
     });
     this.today = str;
     console.log(this.today);
+
+    let today = new Date();
+    let month = today.getMonth();
+    let year = today.getFullYear();
+    let prevMonth = (month === 0) ? 11 : month -1;
+    let prevYear = (prevMonth === 11) ? year - 1 : year;
+    let nextMonth = (month === 11) ? 0 : month + 1;
+    let nextYear = (nextMonth === 0) ? year + 1 : year;
+    this.minDate = new Date();
+    this.minDate.setMonth(prevMonth);
+    this.minDate.setFullYear(prevYear);
+    this.maxDate = new Date();
+    this.maxDate.setMonth(nextMonth);
+    this.maxDate.setFullYear(nextYear);
+
+    let invalidDate = new Date();
+    invalidDate.setDate(today.getDate() - 1);
+    this.invalidDates = [today,invalidDate];
+
   }
 
   showDialog() {
@@ -58,11 +100,30 @@ export class CalendarComponent implements OnInit {
   }
 
   senRequest(){
-    this.http.get("https://localhost:8080").subscribe(res => {
-      console.log(res);
-    });
+
+    /*let headers = new HttpHeaders();
+    headers.append('Content-Type', 'application/json');
+    headers.append('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
+    headers.append('Access-Control-Allow-Origin', '*');*/
+    //http://localhost:8080/getAllReminders?title=Event1
+
+    let params = new HttpParams();
+    params = params.append("title", "Evento1");
+    params = params.append("freq", "RRule.WEEKLY");
+    params = params.append("interval", "2");
+    params = params.append("byweekday", "[RRule.MO, RRule.FR]");
+    params = params.append("dtstart", (new Date(Date.UTC(2021, 9, 1, 10, 30)).toString()));
+    params = params.append("until", (new Date(Date.UTC(2022, 12, 31))).toString());
+    console.log(params);
+    this.http.get<Array<Structure>>("http://localhost:8080/getAllReminders", {params:params})
+      .subscribe(data =>  {
+        this.a = data;
+        console.log(this.a);
+      });
   }
+
   salvaEvento(){
+    console.log("/////////////"+this.selectedDate);
     this.addEvents(this.selectedDate!);
     this.senRequest();
     this.closeDialog();
@@ -75,12 +136,11 @@ export class CalendarComponent implements OnInit {
   }
 
   addEvents(date: Date) {
-
     const rule = new RRule({
     freq: RRule.WEEKLY,
     interval: 2,
     byweekday: [RRule.MO, RRule.FR],
-    dtstart: new Date(Date.UTC(2021, 9, 1, 10, 30)),
+    dtstart: new Date(date),
     until: new Date(Date.UTC(2022, 12, 31))
   })
 
@@ -110,4 +170,16 @@ export class CalendarComponent implements OnInit {
     this.calendarOptions.weekends = !this.calendarOptions.weekends // toggle the boolean!
   }
 
+  unlockElements(){
+    if(this.endInstance == "Data"){
+      this.disableDP = false;
+    }else{
+      this.disableDP = true;
+    }
+    if(this.endInstance == "Dopo"){
+      this.disableOcc = false;
+    }else{
+      this.disableOcc = true;
+    }
+  }
 }

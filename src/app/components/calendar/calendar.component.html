@@ -1,9 +1,68 @@
-<p-dialog header="Inserisci un evento" [(visible)]="display" [modal]="true" position="top">
+<p-dialog header="Inserisci un evento" [(visible)]="display" [modal]="true" position="top" >
   <ng-template pTemplate="header">
-    Header content here
+    <h3>Ricorrenza personalizzata</h3>
   </ng-template>
   <ng-template pTemplate="content">
-    content here
+    <table>
+      <tr>
+        <td>
+          <b>Ripetizioni</b>
+        </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>
+          <p-inputNumber [(ngModel)]="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
+        </td>
+        <td>
+          <select>
+            <option>Giorni</option>
+            <option>Settimane</option>
+            <option>Mesi</option>
+            <option>Anni</option>
+          </select>
+        </td>
+
+      </tr>
+      <tr>
+        <td><b>Fine ripedizioni</b></td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="p-field-radiobutton">
+            <p-radioButton name="fine" value="Mai" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
+            <label >Mai</label>
+          </div>
+        </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="p-field-radiobutton">
+          <p-radioButton name="fine" value="Data" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
+          <label >Data</label>
+          </div>
+        </td>
+        <td>
+          <div class="p-field p-col-12 p-md-4">
+            <p-calendar appendTo="body" [(ngModel)]="date_picked" [showIcon]="true" inputId="icon" [disabled]="disableDP"></p-calendar>
+          </div>
+        </td>
+      </tr>
+      <tr>
+        <td>
+          <div class="p-field-radiobutton">
+            <p-radioButton name="fine" value="Dopo" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
+            <label >Dopo</label>
+          </div>
+        </td>
+        <td>
+          <p-inputNumber [(ngModel)]="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0" [disabled]="disableOcc"></p-inputNumber> Occorrenze
+        </td>
+      </tr>
+    </table>
+
   </ng-template>
   <ng-template pTemplate="footer">
     <button pButton type="button" label="Salva" (click)="salvaEvento()"></button>
@@ -11,6 +70,5 @@
   </ng-template>
 
 </p-dialog>
-
 
 <full-calendar [options]="calendarOptions" #calendar></full-calendar>
