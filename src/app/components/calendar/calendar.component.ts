@@ -19,6 +19,11 @@ interface Structure {
   idQuestionary: number
 }
 
+interface InstancesType{
+  name: string,
+  code: string
+}
+
 @Component({
   selector: 'app-calendar',
   templateUrl: './calendar.component.html',
@@ -40,9 +45,20 @@ export class CalendarComponent implements OnInit {
   disableOcc: boolean = false;
   repetitionNumber: number = 1;
   occurrencyNumber: number = 1;
+  instanceType: InstancesType[];
+  selectedInstance?: InstancesType;
+  title: string = "";
 
+  constructor(private http: HttpClient) {
+    this.unlockElements();
+    this.instanceType = [
+      {name: "Giorni", code: "RRule.DAYLY"},
+      {name: "Settimane", code: "RRule.WEEKLY"},
+      {name: "Mesi", code: "RRule.MONTHLY"},
+      {name: "Anni", code: "RRule.YEARLY"}
+    ];
 
-  constructor(private http: HttpClient) {  }
+  }
 
   calendarOptions: CalendarOptions = {
     initialView: 'dayGridMonth',
@@ -56,14 +72,11 @@ export class CalendarComponent implements OnInit {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: true,
-
     weekends: false // initial value
   };
 
 
   ngOnInit(): void {
-    this.unlockElements();
-
     let str = formatDate(new Date(), {
       hour: 'numeric',
       minute: '2-digit',
@@ -101,25 +114,36 @@ export class CalendarComponent implements OnInit {
 
   senRequest(){
 
-    /*let headers = new HttpHeaders();
-    headers.append('Content-Type', 'application/json');
-    headers.append('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-    headers.append('Access-Control-Allow-Origin', '*');*/
-    //http://localhost:8080/getAllReminders?title=Event1
+    var body = {
+      r_title: this.title,
+      r_freq: this.selectedInstance!.code,
+      r_dt_start: this.selectedDate,
+      r_interval: "",
+      r_byweekday: "[RRule.MO, RRule.FR]",
+      r_until: this.date_picked,
+      r_tzid: "local"
+    };
 
-    let params = new HttpParams();
-    params = params.append("title", "Evento1");
-    params = params.append("freq", "RRule.WEEKLY");
-    params = params.append("interval", "2");
-    params = params.append("byweekday", "[RRule.MO, RRule.FR]");
-    params = params.append("dtstart", (new Date(Date.UTC(2021, 9, 1, 10, 30)).toString()));
-    params = params.append("until", (new Date(Date.UTC(2022, 12, 31))).toString());
+    this.http.post<any>('http://localhost:8080/post', body ).subscribe(data => {
+
+      console.log(data);
+    });
+
+    /*let params = new HttpParams();
+    params = params.append("title", this.title);
+    params = params.append("freq", this.selectedInstance!.code);//istanza {giorni,settimana,mese,anni}
+    params = params.append("dtstart", this.selectedDate!.toString()); //data inizio
+    params = params.append("interval", "");//ogni quante volte in base alla frequenza
+    params = params.append("byweekday", "[RRule.MO, RRule.FR]"); //quali giorni della settimana
+    params = params.append("until", (this.date_picked? this.date_picked.toString(): ""));//fino a che data
+    params = params.append("tzid", "local");//time zone ID
+
     console.log(params);
-    this.http.get<Array<Structure>>("http://localhost:8080/getAllReminders", {params:params})
+    this.http.get<Array<Structures>>("http://localhost:8080/getAllReminders", {params:params})
       .subscribe(data =>  {
         this.a = data;
         console.log(this.a);
-      });
+      });*/
   }
 
   salvaEvento(){

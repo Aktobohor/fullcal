@@ -5,6 +5,27 @@
   <ng-template pTemplate="content">
     <table>
       <tr>
+        <td><br></td>
+        <td><br></td>
+      </tr>
+      <tr>
+        <td>
+          <div class="p-fluid p-grid">
+            <div class="p-field p-col-12 p-md-4">
+              <span class="p-float-label">
+                <input type="text" id="inputtext" pInputText [(ngModel)]="title" />
+                <label for="inputtext">Titolo evento</label>
+              </span>
+            </div>
+          </div>
+        </td>
+        <td></td>
+      </tr>
+      <tr>
+        <td><br></td>
+        <td><br></td>
+      </tr>
+      <tr>
         <td>
           <b>Ripetizioni</b>
         </td>
@@ -15,14 +36,8 @@
           <p-inputNumber [(ngModel)]="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
         </td>
         <td>
-          <select>
-            <option>Giorni</option>
-            <option>Settimane</option>
-            <option>Mesi</option>
-            <option>Anni</option>
-          </select>
+          <p-dropdown [options]="instanceType" [(ngModel)]="selectedInstance" placeholder="Istanza" optionLabel="name" [showClear]="true"></p-dropdown>
         </td>
-
       </tr>
       <tr>
         <td><b>Fine ripedizioni</b></td>
@@ -31,8 +46,8 @@
       <tr>
         <td>
           <div class="p-field-radiobutton">
-            <p-radioButton name="fine" value="Mai" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
-            <label >Mai</label>
+            <p-radioButton name="fine" value="Max" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
+            <label >2 Anni</label>
           </div>
         </td>
         <td></td>
@@ -68,7 +83,6 @@
     <button pButton type="button" label="Salva" (click)="salvaEvento()"></button>
     <button pButton type="button" label="Annulla" class="p-button-danger" (click)="closeDialog()"></button>
   </ng-template>
-
 </p-dialog>
 
 <full-calendar [options]="calendarOptions" #calendar></full-calendar>
