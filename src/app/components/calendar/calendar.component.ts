@@ -1,14 +1,11 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
 import RRule from "rrule";
-import {observable, Observable, throwError} from 'rxjs';
-import { catchError, retry } from 'rxjs/operators';
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
-import {InputNumberModule} from 'primeng/inputnumber';
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 
 const httpOptions = {
   headers: new HttpHeaders({
-    'Content-Type':  'application/json',
+    'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
   })
@@ -19,10 +16,44 @@ interface Structure {
   idQuestionary: number
 }
 
-interface InstancesType{
+interface InstancesType {
   name: string,
   code: string
 }
+
+interface ReminderDto {
+  id?: number,
+  r_title: string,
+  r_freq: string,
+  r_dt_start: Date,
+  r_interval: number,
+  r_wkst: number,
+  r_count: number,
+  r_until?: Date,
+  r_tzid?: string,
+  r_bysetpos?: string,
+  r_bymonth?: string,
+  r_byyearday?: string,
+  r_byweekno?: string,
+  r_byweekday?: string,
+  r_byhour?: string,
+  r_byminute?: string,
+  r_byseconds?: string,
+}
+
+interface StructureDto {
+  id?: number;
+  idQuestionary?: number;
+  idTask?: number;
+  idChallenges?: number;
+  idRandomTask?: number;
+}
+
+interface NewReminderDTO {
+  reminderDto: ReminderDto;
+  structureDto: StructureDto;
+}
+
 
 @Component({
   selector: 'app-calendar',
@@ -35,7 +66,7 @@ export class CalendarComponent implements OnInit {
   today = "";
   display: boolean = false;
   selectedDate?: Date;
-  a? : Array<Structure>;
+  a?: Array<Structure>;
   endInstance?: string;
   date_picked?: Date;
   minDate?: Date;
@@ -88,7 +119,7 @@ export class CalendarComponent implements OnInit {
     let today = new Date();
     let month = today.getMonth();
     let year = today.getFullYear();
-    let prevMonth = (month === 0) ? 11 : month -1;
+    let prevMonth = (month === 0) ? 11 : month - 1;
     let prevYear = (prevMonth === 11) ? year - 1 : year;
     let nextMonth = (month === 11) ? 0 : month + 1;
     let nextYear = (nextMonth === 0) ? year + 1 : year;
@@ -101,55 +132,58 @@ export class CalendarComponent implements OnInit {
 
     let invalidDate = new Date();
     invalidDate.setDate(today.getDate() - 1);
-    this.invalidDates = [today,invalidDate];
+    this.invalidDates = [today, invalidDate];
+
+    this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders")
+      .subscribe(data => {
+        console.log(data)
+      });
 
   }
 
   showDialog() {
     this.display = true;
   }
-  closeDialog(){
+
+  closeDialog() {
     this.display = false;
   }
 
-  senRequest(){
+  sendRequest() {
 
-    var body = {
+    let reminderDto: ReminderDto = {
+      r_count: 0,
+      r_wkst: 0,
       r_title: this.title,
       r_freq: this.selectedInstance!.code,
-      r_dt_start: this.selectedDate,
-      r_interval: "",
+      r_dt_start: this.selectedDate!,
+      r_interval: 0,
       r_byweekday: "[RRule.MO, RRule.FR]",
       r_until: this.date_picked,
       r_tzid: "local"
     };
 
-    this.http.post<any>('http://localhost:8080/post', body ).subscribe(data => {
+
+    let structureDto: StructureDto = {
+      idQuestionary: 1
+    };
+
+    var body: NewReminderDTO = {
+      reminderDto: reminderDto,
+      structureDto: structureDto
+    };
+
+    this.http.post<any>('http://localhost:8080/reminders', body).subscribe(data => {
 
       console.log(data);
     });
 
-    /*let params = new HttpParams();
-    params = params.append("title", this.title);
-    params = params.append("freq", this.selectedInstance!.code);//istanza {giorni,settimana,mese,anni}
-    params = params.append("dtstart", this.selectedDate!.toString()); //data inizio
-    params = params.append("interval", "");//ogni quante volte in base alla frequenza
-    params = params.append("byweekday", "[RRule.MO, RRule.FR]"); //quali giorni della settimana
-    params = params.append("until", (this.date_picked? this.date_picked.toString(): ""));//fino a che data
-    params = params.append("tzid", "local");//time zone ID
-
-    console.log(params);
-    this.http.get<Array<Structures>>("http://localhost:8080/getAllReminders", {params:params})
-      .subscribe(data =>  {
-        this.a = data;
-        console.log(this.a);
-      });*/
   }
 
-  salvaEvento(){
-    console.log("/////////////"+this.selectedDate);
+  salvaEvento() {
+    console.log("/////////////" + this.selectedDate);
     this.addEvents(this.selectedDate!);
-    this.senRequest();
+    this.sendRequest();
     this.closeDialog();
   }
 
@@ -161,12 +195,12 @@ export class CalendarComponent implements OnInit {
 
   addEvents(date: Date) {
     const rule = new RRule({
-    freq: RRule.WEEKLY,
-    interval: 2,
-    byweekday: [RRule.MO, RRule.FR],
-    dtstart: new Date(date),
-    until: new Date(Date.UTC(2022, 12, 31))
-  })
+      freq: RRule.WEEKLY,
+      interval: 2,
+      byweekday: [RRule.MO, RRule.FR],
+      dtstart: new Date(date),
+      until: new Date(Date.UTC(2022, 12, 31))
+    })
 
 
     let event = [
@@ -194,15 +228,15 @@ export class CalendarComponent implements OnInit {
     this.calendarOptions.weekends = !this.calendarOptions.weekends // toggle the boolean!
   }
 
-  unlockElements(){
-    if(this.endInstance == "Data"){
+  unlockElements() {
+    if (this.endInstance == "Data") {
       this.disableDP = false;
-    }else{
+    } else {
       this.disableDP = true;
     }
-    if(this.endInstance == "Dopo"){
+    if (this.endInstance == "Dopo") {
       this.disableOcc = false;
-    }else{
+    } else {
       this.disableOcc = true;
     }
   }
