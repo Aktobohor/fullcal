@@ -1,7 +1,9 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
-import {CalendarOptions, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
+import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
 import {ByWeekday, Frequency, Options, RRule, RRuleSet, RRuleStrOptions} from "rrule";
 import {HttpClient, HttpHeaders} from '@angular/common/http';
+import rrulePlugin from "@fullcalendar/rrule";
+import dayGridPlugin from "@fullcalendar/daygrid";
 
 const httpOptions = {
   headers: new HttpHeaders({
@@ -75,7 +77,6 @@ export class CalendarComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
   today = "";
   display: boolean = false;
-  eventList?: Array<event>;
   selectedDate?: Date;
   reminderDtoList?: Array<ReminderDto>;
   endInstance?: string;
@@ -103,13 +104,10 @@ export class CalendarComponent implements OnInit {
   }
 
   calendarOptions: CalendarOptions = {
+    plugins:[ rrulePlugin, dayGridPlugin],
     initialView: 'dayGridMonth',
     dateClick: this.handleDateClick.bind(this), // bind is important!
-    events: this.eventList/*[
-      {title: 'event 1', date: '2021-10-01', color: 'orange'},
-      {title: 'event 2', date: '2021-10-06', color: 'lightblue'}
-    ]*/,
-
+    events: [],
     editable: true,
     selectable: true,
     selectMirror: true,
@@ -127,7 +125,7 @@ export class CalendarComponent implements OnInit {
     this.today = str;
     console.log(this.today);
 
-    let today = new Date();
+    /*let today = new Date();
     let month = today.getMonth();
     let year = today.getFullYear();
     let prevMonth = (month === 0) ? 11 : month - 1;
@@ -143,15 +141,13 @@ export class CalendarComponent implements OnInit {
 
     let invalidDate = new Date();
     invalidDate.setDate(today.getDate() - 1);
-    this.invalidDates = [today, invalidDate];
+    this.invalidDates = [today, invalidDate];*/
 
     this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders")
       .subscribe(data => {
         this.reminderDtoList = data;
         console.log(this.reminderDtoList);
-        this.createRRule();
-
-        this.popolaEventsArray()
+        this.CaricaReminderDaDatabase(data);
 
       });
 
@@ -159,62 +155,32 @@ export class CalendarComponent implements OnInit {
 
   }
 
-  createRRule(){
+  CaricaReminderDaDatabase(data : Array<ReminderDto>){
 
-    let dateStart : Array<any> =  this.reminderDtoList![0].r_dt_start.toString().split(",");
-    let dateUntil : Array<any> =  this.reminderDtoList![0].r_until!.toString().split(",");
+    let eventToAddInCalendar : EventSourceInput = [];
+    var rule1: RRule;
+    for (let reminder of data){
+
+    let dateStart : Array<any> =  reminder.r_dt_start.toString().split(",");
+    let dateUntil : Array<any> =  reminder.r_until!.toString().split(",");
 
     var option = RRule.parseString("");
     option.dtstart = new Date (dateStart[0],dateStart[1]-1,dateStart[2],dateStart[3],dateStart[4]);
     option.until = new Date (dateUntil[0],dateUntil[1]-1,dateUntil[2],dateUntil[3],dateUntil[4]);
-    option.interval = this.reminderDtoList![0].r_interval;
-    option.freq = this.getFrequencyFromString();
+    option.interval = reminder.r_interval;
+    option.freq = this.getFrequencyFromString(reminder.r_freq);
 
-    var rule1 = new RRule(option);
-    this.eventList = new Array<event>();
-    var dateArray = rule1.all();
-    for (let d of dateArray){
-      let z : event = {title:'event', date:d.toDateString(), color:'orange'}
-      this.eventList?.push(z);
+    rule1 = new RRule(option);
+    eventToAddInCalendar.push({title: reminder.r_title, rrule:rule1.toString(), color: 'orange'});
+    console.log(eventToAddInCalendar);
+    console.log(rule1.all());
     }
-    console.log(this.eventList);
-    //console.log(rule1.all());
-
-    /*var rule2 = new RRule();
-    rule2.origOptions.dtstart = new Date(dateStart[0],dateStart[1]-1,dateStart[2],dateStart[3],dateStart[4]);
-    rule2.options.until = new Date(dateUntil[0],dateUntil[1]-1,dateUntil[2],dateUntil[3],dateUntil[4]);
-    rule2.options.interval = this.reminderDtoList![0].r_interval;
-    rule2.options.freq = this.getFrequencyFromString();
-    console.log(rule2.all());*/
-
+    //load eventi su calendario
+    this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
   }
 
-  private popolaEventsArray() {
-
-  }
-
-  getFrequencyFromStringtoString() : string{
-    switch(this.reminderDtoList![0].r_freq){
-      case "RRule.DAILY": {
-        return "DAILY";
-      }
-      case "RRule.WEEKLY": {
-        return "WEEKLY";
-      }
-      case "RRule.MONTHLY": {
-        return "MONTHLY";
-      }
-      case "RRule.YEARLY": {
-        return "YEARLY";
-      }
-      default:{
-        return "HOURLY";
-      }
-    }
-  }
-
-  getFrequencyFromString() : Frequency{
-    switch(this.reminderDtoList![0].r_freq){
+  getFrequencyFromString(freq : string) : Frequency{
+    switch(freq){
       case "RRule.DAILY": {
         return Frequency.DAILY;
       }
