@@ -1,6 +1,6 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
-import {ByWeekday, Frequency, Options, RRule, RRuleSet, RRuleStrOptions} from "rrule";
+import {ByWeekday, Frequency, RRule} from "rrule";
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -27,11 +27,11 @@ interface ReminderDto {
   id?: number,
   r_title: string,
   r_freq: string,
-  r_dt_start: Date,
+  r_dt_start: Array<number> | Date,
   r_interval: number,
-  r_wkst: number,
-  r_count: number,
-  r_until?: Date,
+  r_wkst?: number,
+  r_count?: number,
+  r_until?: Array<number> | Date,
   r_tzid?: string,
   r_bysetpos?: string,
   r_bymonth?: string,
@@ -61,7 +61,7 @@ interface NewReminderDTO {
   strsRemsDto: StrsRemsDto;
 }
 
-interface event{
+interface event {
   title: string;
   date: string;
   color: string;
@@ -104,7 +104,7 @@ export class CalendarComponent implements OnInit {
   }
 
   calendarOptions: CalendarOptions = {
-    plugins:[ rrulePlugin, dayGridPlugin],
+    plugins: [rrulePlugin, dayGridPlugin],
     initialView: 'dayGridMonth',
     dateClick: this.handleDateClick.bind(this), // bind is important!
     events: [],
@@ -152,57 +152,66 @@ export class CalendarComponent implements OnInit {
       });
 
 
-
   }
 
-  CaricaReminderDaDatabase(data : Array<ReminderDto>){
+  CaricaReminderDaDatabase(data: Array<ReminderDto>) {
 
-    let eventToAddInCalendar : EventSourceInput = [];
+    let eventToAddInCalendar: EventSourceInput = [];
     var rule1: RRule;
-    for (let reminder of data){
+    for (let reminder of data) {
 
-    let dateStart : Array<any> =  reminder.r_dt_start.toString().split(",");
-    let dateUntil : Array<any> =  reminder.r_until!.toString().split(",");
+      const reminderStartDate = reminder.r_dt_start as Array<number>;
+      const reminderEndDate = reminder.r_until as Array<number>;
 
-    var option = RRule.parseString("");
-    option.dtstart = new Date (dateStart[0],dateStart[1]-1,dateStart[2],dateStart[3],dateStart[4]);
-    option.until = new Date (dateUntil[0],dateUntil[1]-1,dateUntil[2],dateUntil[3],dateUntil[4]);
-    option.interval = reminder.r_interval;
-    option.freq = this.getFrequencyFromString(reminder.r_freq);
+      /*var option = RRule.parseString("");
+      option.dtstart = new Date(reminderStartDate[0], reminderStartDate[1] - 1, reminderStartDate[2], reminderStartDate[3], reminderStartDate[4]);
+      option.until = new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]);
+      option.interval = reminder.r_interval;
+      option.freq = this.getFrequencyFromString(reminder.r_freq);*/
 
-    rule1 = new RRule(option);
-    eventToAddInCalendar.push({title: reminder.r_title, rrule:rule1.toString(), color: 'orange'});
-    console.log(eventToAddInCalendar);
-    console.log(rule1.all());
+      let dateStart = new Date(reminderStartDate[0], reminderStartDate[1] - 1, reminderStartDate[2], reminderStartDate[3], reminderStartDate[4]);
+
+      console.log("datestart",dateStart)
+
+      rule1 = new RRule({
+        freq : this.getFrequencyFromString(reminder.r_freq),
+        dtstart: dateStart,
+        until: new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]),
+        interval:  reminder.r_interval,
+
+      });
+      eventToAddInCalendar.push({title: reminder.r_title, rrule: rule1.toString(), color: 'orange'});
+      console.log(rule1.toString());
+      console.log(rule1.all());
     }
     //load eventi su calendario
     this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
   }
 
-  getFrequencyFromString(freq : string) : Frequency{
-    switch(freq){
+  getFrequencyFromString(freq: string): Frequency {
+    switch (freq) {
       case "RRule.DAILY": {
-        return Frequency.DAILY;
+        return RRule.DAILY;
       }
       case "RRule.WEEKLY": {
-        return Frequency.WEEKLY;
+        return RRule.WEEKLY;
       }
       case "RRule.MONTHLY": {
-        return Frequency.MONTHLY;
+        return RRule.MONTHLY;
       }
       case "RRule.YEARLY": {
-        return Frequency.YEARLY;
+        return RRule.YEARLY;
       }
-      default:{
-        return Frequency.HOURLY;
+      default: {
+        return RRule.HOURLY;
       }
     }
   }
 
-  getArrayByWeekday() : ByWeekday[]{
-    let byWeekdayArray : Array<ByWeekday> = [];
-    let a = this.reminderDtoList![0].r_byweekday?  this.reminderDtoList![0].r_byweekday : "";
-    if(a != "") {
+  getArrayByWeekday(): ByWeekday[] {
+    let byWeekdayArray: Array<ByWeekday> = [];
+    let a = this.reminderDtoList![0].r_byweekday ? this.reminderDtoList![0].r_byweekday : "";
+    if (a != "") {
       a = a.replace("[", "");
       a = a.replace("]", "");
       let array: Array<String> = [];
@@ -254,16 +263,24 @@ export class CalendarComponent implements OnInit {
   sendRequest() {
 
     let reminderDto: ReminderDto = {
-      r_count: 0,
-      r_wkst: 0,
       r_title: this.title,
       r_freq: this.selectedInstance!.code,
       r_dt_start: this.selectedDate!,
-      r_interval: 0,
-      r_byweekday: "[RRule.MO, RRule.FR]",
+      r_interval: this.repetitionNumber,
       r_until: this.date_picked,
       r_tzid: "local"
     };
+
+    const rule1 = new RRule({
+      freq : this.getFrequencyFromString(this.selectedInstance!.code),
+      interval: this.repetitionNumber,
+      dtstart:this.selectedDate!,
+      until:  this.date_picked,
+
+    });
+
+    console.log(rule1.options)
+    console.log(rule1.toString())
 
     let structureDto: StructureDto = {
       idQuestionary: 1
@@ -288,7 +305,7 @@ export class CalendarComponent implements OnInit {
 
   salvaEvento() {
     console.log("/////////////" + this.selectedDate);
-    this.addEvents(this.selectedDate!);
+    //this.addEvents(this.selectedDate!);
     this.sendRequest();
     this.closeDialog();
   }
@@ -299,7 +316,7 @@ export class CalendarComponent implements OnInit {
     this.showDialog();
   }
 
-  addEvents(date: Date) {
+  /*addEvents(date: Date) {
     const rule = new RRule({
       freq: RRule.WEEKLY,
       interval: 2,
@@ -320,7 +337,7 @@ export class CalendarComponent implements OnInit {
 
     this.calendarComponent?.getApi().addEventSource(event);
 
-  }
+  }*/
 
   changetime() {
     this.today = formatDate(new Date(), {
