@@ -19,7 +19,9 @@ import {RadioButtonModule} from "primeng/radiobutton";
 import {CalendarModule} from "primeng/calendar";
 import {DropdownModule} from "primeng/dropdown";
 import {InputTextModule} from "primeng/inputtext";
-
+import { ScheduleCheckerComponent } from './components/schedul-checker/schedule-checker.component';
+import { ReactiveFormsModule } from '@angular/forms';
+import {SelectButtonModule} from "primeng/selectbutton";
 
 
 // @ts-ignore
@@ -34,26 +36,29 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
   declarations: [
     AppComponent,
     CalendarComponent,
+    ScheduleCheckerComponent,
 
   ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    FullCalendarModule,
-    OverlayPanelModule,
-    ButtonModule,
-    FullCalendarModule,
-    DialogModule,
-    FormsModule,
-    InputNumberModule,
-    RadioButtonModule,
-    CalendarModule,
-    DropdownModule,
-    InputTextModule
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        FullCalendarModule,
+        OverlayPanelModule,
+        ButtonModule,
+        FullCalendarModule,
+        DialogModule,
+        FormsModule,
+        InputNumberModule,
+        RadioButtonModule,
+        CalendarModule,
+        DropdownModule,
+        InputTextModule,
+        ReactiveFormsModule,
+        SelectButtonModule
 
-  ],
+    ],
   providers: [],
   bootstrap: [AppComponent]
 })

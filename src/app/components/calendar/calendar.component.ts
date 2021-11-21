@@ -4,6 +4,8 @@ import {ByWeekday, Frequency, RRule} from "rrule";
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
+import {FormGroup, FormControl, Validators} from '@angular/forms';
+import {SelectButtonModule} from 'primeng/selectbutton';
 
 const httpOptions = {
   headers: new HttpHeaders({
@@ -12,6 +14,11 @@ const httpOptions = {
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
   })
 };
+
+interface daysOfTheWeek {
+  name: string,
+  code: string
+}
 
 interface Structure {
   id: number,
@@ -77,20 +84,17 @@ export class CalendarComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
   today = "";
   display: boolean = false;
-  selectedDate?: Date;
+  selectedDate: Date = new Date();
   reminderDtoList?: Array<ReminderDto>;
   endInstance?: string;
-  date_picked?: Date;
-  minDate?: Date;
-  maxDate?: Date;
-  invalidDates?: Array<Date>;
+  until_date_picked?: Date;
   disableDP: boolean = false;
   disableOcc: boolean = false;
-  repetitionNumber: number = 1;
-  occurrencyNumber: number = 1;
+  disableDayOftheWeek: boolean = false;
   instanceType: InstancesType[];
-  selectedInstance?: InstancesType;
   title: string = "";
+  days: daysOfTheWeek[];
+
 
   constructor(private http: HttpClient) {
     this.unlockElements();
@@ -101,7 +105,27 @@ export class CalendarComponent implements OnInit {
       {name: "Anni", code: "RRule.YEARLY"}
     ];
 
+    this.days = [
+      {name: 'L', code: 'RRule.MO'},
+      {name: 'M', code: 'RRule.TU'},
+      {name: 'M', code: 'RRule.WE'},
+      {name: 'G', code: 'RRule.TH'},
+      {name: 'V', code: 'RRule.FR'},
+      {name: 'S', code: 'RRule.SA'},
+      {name: 'D', code: 'RRule.SU'}
+    ];
+
   }
+
+  profileForm = new FormGroup({
+    title: new FormControl('', Validators.required),
+    endInstance: new FormControl(''),
+    selectedInstance: new FormControl('' , Validators.required),
+    repetitionNumber: new FormControl('1' , Validators.required),
+    until_date_picked: new FormControl(''),
+    occurrencyNumber: new FormControl(""),
+    selectedDays:new FormControl("")
+  });
 
   calendarOptions: CalendarOptions = {
     plugins: [rrulePlugin, dayGridPlugin],
@@ -112,7 +136,7 @@ export class CalendarComponent implements OnInit {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: true,
-    weekends: false // initial value
+    weekends: true // includere i weekend nel calendario
   };
 
 
@@ -124,24 +148,6 @@ export class CalendarComponent implements OnInit {
     });
     this.today = str;
     console.log(this.today);
-
-    /*let today = new Date();
-    let month = today.getMonth();
-    let year = today.getFullYear();
-    let prevMonth = (month === 0) ? 11 : month - 1;
-    let prevYear = (prevMonth === 11) ? year - 1 : year;
-    let nextMonth = (month === 11) ? 0 : month + 1;
-    let nextYear = (nextMonth === 0) ? year + 1 : year;
-    this.minDate = new Date();
-    this.minDate.setMonth(prevMonth);
-    this.minDate.setFullYear(prevYear);
-    this.maxDate = new Date();
-    this.maxDate.setMonth(nextMonth);
-    this.maxDate.setFullYear(nextYear);
-
-    let invalidDate = new Date();
-    invalidDate.setDate(today.getDate() - 1);
-    this.invalidDates = [today, invalidDate];*/
 
     this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders")
       .subscribe(data => {
@@ -162,12 +168,6 @@ export class CalendarComponent implements OnInit {
 
       const reminderStartDate = reminder.r_dt_start as Array<number>;
       const reminderEndDate = reminder.r_until as Array<number>;
-
-      /*var option = RRule.parseString("");
-      option.dtstart = new Date(reminderStartDate[0], reminderStartDate[1] - 1, reminderStartDate[2], reminderStartDate[3], reminderStartDate[4]);
-      option.until = new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]);
-      option.interval = reminder.r_interval;
-      option.freq = this.getFrequencyFromString(reminder.r_freq);*/
 
       let dateStart = new Date(reminderStartDate[0], reminderStartDate[1] - 1, reminderStartDate[2], reminderStartDate[3], reminderStartDate[4]);
 
@@ -203,7 +203,7 @@ export class CalendarComponent implements OnInit {
         return RRule.YEARLY;
       }
       default: {
-        return RRule.HOURLY;
+        return RRule.DAILY;
       }
     }
   }
@@ -260,23 +260,42 @@ export class CalendarComponent implements OnInit {
     this.display = false;
   }
 
+  showRequest(){
+    console.log(this.profileForm.value);
+  }
+
   sendRequest() {
 
-    let reminderDto: ReminderDto = {
+    /*let reminderDto: ReminderDto = {
       r_title: this.title,
       r_freq: this.selectedInstance!.code,
       r_dt_start: this.selectedDate!,
       r_interval: this.repetitionNumber,
-      r_until: this.date_picked,
+      r_until: this.until_date_picked,
       r_tzid: "local"
     };
-
     const rule1 = new RRule({
       freq : this.getFrequencyFromString(this.selectedInstance!.code),
       interval: this.repetitionNumber,
       dtstart:this.selectedDate!,
-      until:  this.date_picked,
+      until:  this.until_date_picked,
 
+    });*/
+
+    //NEW
+    let reminderDto: ReminderDto = {
+      r_dt_start: this.selectedDate!,
+      r_title: this.profileForm.value.title,
+      r_freq: this.profileForm.value.selectedInstance.code,
+      r_interval: this.profileForm.value.repetitionNumber,
+      r_until: this.profileForm.value.until_date_picked
+    };
+
+    const rule1 = new RRule({
+      freq : this.getFrequencyFromString(this.profileForm.value.instanceType),
+      interval: this.profileForm.value.repetitionNumber,
+      dtstart:this.selectedDate!,
+      until:  this.profileForm.value.until_date_picked
     });
 
     console.log(rule1.options)
@@ -287,7 +306,7 @@ export class CalendarComponent implements OnInit {
     };
 
     let strsRemsDto: StrsRemsDto = {
-      creator: "a@b.it"
+      creator: "manuel@Outlook.it"
     };
 
     var body: NewReminderDTO = {
@@ -296,10 +315,11 @@ export class CalendarComponent implements OnInit {
       strsRemsDto: strsRemsDto
     };
 
+    console.log(body);
+
     this.http.post<any>('http://localhost:8080/reminders/create', body).subscribe(data => {
       console.log(data);
     });
-
 
   }
 
@@ -339,29 +359,27 @@ export class CalendarComponent implements OnInit {
 
   }*/
 
-  changetime() {
-    this.today = formatDate(new Date(), {
-      hour: 'numeric',
-      minute: '2-digit',
-      second: '2-digit'
-    });
-  }
-
   toggleWeekends() {
     this.calendarOptions.weekends = !this.calendarOptions.weekends // toggle the boolean!
   }
 
   unlockElements() {
-    if (this.endInstance == "Data") {
+    if (this.profileForm.value.endInstance != null && this.profileForm.value.endInstance == "Data") {
       this.disableDP = false;
     } else {
       this.disableDP = true;
     }
-    if (this.endInstance == "Dopo") {
+    if (this.profileForm.value.endInstance != null && this.profileForm.value.endInstance == "Dopo") {
       this.disableOcc = false;
     } else {
       this.disableOcc = true;
     }
+    if ( this.profileForm.value.selectedInstance != null && this.profileForm.value.selectedInstance.code == "RRule.WEEKLY") {
+      this.disableDayOftheWeek = false;
+    } else {
+      this.disableDayOftheWeek = true;
+    }
+
   }
 
 

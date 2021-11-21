@@ -1,88 +1,75 @@
-<p-dialog header="Inserisci un evento" [(visible)]="display" [modal]="true" position="top" >
-  <ng-template pTemplate="header">
+<p-dialog header="Inserisci un evento" [(visible)]="display" [style]="{width:'500px'}" [modal]="true" position="top" >
+
+    <ng-template pTemplate="header">
     <h3>Ricorrenza personalizzata</h3>
   </ng-template>
   <ng-template pTemplate="content">
-    <table>
-      <tr>
-        <td><br></td>
-        <td><br></td>
-      </tr>
-      <tr>
-        <td>
-          <div class="p-fluid p-grid">
-            <div class="p-field p-col-12 p-md-4">
+    <form [formGroup]="profileForm" (ngSubmit)="sendRequest()">
+    <div class="grid">
+      <div class="col-12"> </div>
+
+      <div class="col-12"> </div>
+
+      <div class="col-6">
+        <div class="p-fluid p-grid">
+          <div class="p-field p-col-12 p-md-4">
               <span class="p-float-label">
-                <input type="text" id="inputtext" pInputText [(ngModel)]="title" />
+                <input type="text" id="inputtext" pInputText formControlName="title"/>
                 <label for="inputtext">Titolo evento</label>
               </span>
-            </div>
           </div>
-        </td>
-        <td></td>
-      </tr>
-      <tr>
-        <td><br></td>
-        <td><br></td>
-      </tr>
-      <tr>
-        <td>
-          <b>Ripeti Ogni</b>
-        </td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>
-          <p-inputNumber [(ngModel)]="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
-        </td>
-        <td>
-          <p-dropdown [options]="instanceType" [(ngModel)]="selectedInstance" placeholder="Istanza" optionLabel="name" [showClear]="true"></p-dropdown>
-        </td>
-      </tr>
-      <tr>
-        <td><b>Fine ripedizioni</b></td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>
-          <div class="p-field-radiobutton">
-            <p-radioButton name="fine" value="Max" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
-            <label >2 Anni</label>
-          </div>
-        </td>
-        <td></td>
-      </tr>
-      <tr>
-        <td>
-          <div class="p-field-radiobutton">
-          <p-radioButton name="fine" value="Data" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
-          <label >Data</label>
-          </div>
-        </td>
-        <td>
-          <div class="p-field p-col-12 p-md-4">
-            <p-calendar appendTo="body" [(ngModel)]="date_picked" [showIcon]="true" inputId="icon" [disabled]="disableDP"></p-calendar>
-          </div>
-        </td>
-      </tr>
-      <tr>
-        <td>
-          <div class="p-field-radiobutton">
-            <p-radioButton name="fine" value="Dopo" [(ngModel)]="endInstance" (onClick)="unlockElements()"></p-radioButton>
-            <label >Dopo</label>
-          </div>
-        </td>
-        <td>
-          <p-inputNumber [(ngModel)]="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0" [disabled]="disableOcc"></p-inputNumber> Occorrenze
-        </td>
-      </tr>
-    </table>
+        </div>
+      </div>
+      <div class="col-6"> </div>
 
+      <div class="col-5">
+        Ripeti ogni <p-inputNumber formControlName="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
+      </div>
+      <div class="col-7">
+        <p-dropdown [options]="instanceType" formControlName="selectedInstance" optionLabel="name"  [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
+      </div>
+
+      <div class="col-12" [hidden]="disableDayOftheWeek"> Si ripete il  </div>
+      <div class="col-12" [hidden]="disableDayOftheWeek"> <p-selectButton [options]="days" formControlName="selectedDays" optionLabel="name" optionValue="code" [multiple]="true"></p-selectButton></div>
+
+      <div class="col-12">
+        <div class="p-field-radiobutton">
+          <p-radioButton name="endInstance" value="Max" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
+          <label >2 Anni</label>
+        </div>
+      </div>
+
+      <div class="col-5">
+        <div class="p-field-radiobutton">
+          <p-radioButton name="endInstance" value="Data" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
+          <label >Data</label>
+        </div>
+      </div>
+      <div class="col-7">
+        <div class="p-field p-col-12 p-md-4">
+          <p-calendar appendTo="body" formControlName="until_date_picked" [minDate]="selectedDate" [readonlyInput]="true" [showIcon]="true" inputId="min-max" [disabled]="disableDP" ></p-calendar>
+        </div>
+      </div>
+
+      <div class="col-5">
+        <div class="p-field-radiobutton">
+          <p-radioButton name="endInstance" value="Dopo" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
+          <label >Dopo</label>
+        </div>
+      </div>
+      <div class="col-7">
+        <p-inputNumber formControlName="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0" [disabled]="disableOcc"></p-inputNumber> Occorrenze
+      </div>
+
+    </div>
+
+    </form>
   </ng-template>
   <ng-template pTemplate="footer">
-    <button pButton type="button" label="Salva" (click)="salvaEvento()"></button>
+    <button pButton type="submit" label="Salva" (click)="salvaEvento()"></button>
     <button pButton type="button" label="Annulla" class="p-button-danger" (click)="closeDialog()"></button>
   </ng-template>
+
 </p-dialog>
 
 <full-calendar [options]="calendarOptions" #calendar></full-calendar>
