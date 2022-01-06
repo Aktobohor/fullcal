@@ -22,6 +22,8 @@ import {InputTextModule} from "primeng/inputtext";
 import { ScheduleCheckerComponent } from './components/schedul-checker/schedule-checker.component';
 import { ReactiveFormsModule } from '@angular/forms';
 import {SelectButtonModule} from "primeng/selectbutton";
+import {ConfirmDialogModule} from "primeng/confirmdialog";
+import {ToastModule} from "primeng/toast";
 
 
 // @ts-ignore
@@ -39,26 +41,28 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
     ScheduleCheckerComponent,
 
   ],
-    imports: [
-        BrowserModule,
-        HttpClientModule,
-        BrowserAnimationsModule,
-        AppRoutingModule,
-        FullCalendarModule,
-        OverlayPanelModule,
-        ButtonModule,
-        FullCalendarModule,
-        DialogModule,
-        FormsModule,
-        InputNumberModule,
-        RadioButtonModule,
-        CalendarModule,
-        DropdownModule,
-        InputTextModule,
-        ReactiveFormsModule,
-        SelectButtonModule
+  imports: [
+    BrowserModule,
+    HttpClientModule,
+    BrowserAnimationsModule,
+    AppRoutingModule,
+    FullCalendarModule,
+    OverlayPanelModule,
+    ButtonModule,
+    FullCalendarModule,
+    DialogModule,
+    FormsModule,
+    InputNumberModule,
+    RadioButtonModule,
+    CalendarModule,
+    DropdownModule,
+    InputTextModule,
+    ReactiveFormsModule,
+    SelectButtonModule,
+    ConfirmDialogModule,
+    ToastModule
 
-    ],
+  ],
   providers: [],
   bootstrap: [AppComponent]
 })

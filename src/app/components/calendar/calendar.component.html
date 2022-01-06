@@ -20,24 +20,35 @@
           </div>
         </div>
       </div>
-      <div class="col-6"> </div>
+      <div class="col-6">
+        <span class="p-float-label">
+          <p-calendar id="inputdate" formControlName="ora_inizio" [timeOnly]="true" hourFormat="12" inputId="timeonly"></p-calendar>
+          <label for="inputdate">Ora inizio</label>
+        </span>
+      </div>
 
-      <div class="col-5">
+      <div class="col-6"></div>
+      <div class="col-6">
+        <br>
+        <span class="p-float-label">
+          <p-inputNumber formControlName="durata_evento" id="inputdurata" [showButtons]="true" [size]="7" [min]="30" [step]="15" ></p-inputNumber>
+          <label for="inputdurata">Durata (min)</label>
+        </span>
+      </div>
+
+      <div class="col-12"> </div>
+
+      <div class="col-6">
         Ripeti ogni <p-inputNumber formControlName="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
       </div>
-      <div class="col-7">
-        <p-dropdown [options]="instanceType" formControlName="selectedInstance" optionLabel="name"  [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
+      <div class="col-6">
+        <p-dropdown [options]="instanceType" [(ngModel)]="instanceSel" formControlName="selectedInstance" id="inputistanza" optionLabel="name" [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
       </div>
 
       <div class="col-12" [hidden]="disableDayOftheWeek"> Si ripete il  </div>
       <div class="col-12" [hidden]="disableDayOftheWeek"> <p-selectButton [options]="days" formControlName="selectedDays" optionLabel="name" optionValue="code" [multiple]="true"></p-selectButton></div>
 
-      <div class="col-12">
-        <div class="p-field-radiobutton">
-          <p-radioButton name="endInstance" value="Max" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
-          <label >2 Anni</label>
-        </div>
-      </div>
+      <div class="col-12"> </div>
 
       <div class="col-5">
         <div class="p-field-radiobutton">
@@ -61,6 +72,7 @@
         <p-inputNumber formControlName="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0" [disabled]="disableOcc"></p-inputNumber> Occorrenze
       </div>
 
+
     </div>
 
     </form>
@@ -71,5 +83,5 @@
   </ng-template>
 
 </p-dialog>
-
+<p-toast></p-toast>
 <full-calendar [options]="calendarOptions" #calendar></full-calendar>

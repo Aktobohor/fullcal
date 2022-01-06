@@ -6,6 +6,8 @@ import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import {FormGroup, FormControl, Validators} from '@angular/forms';
 import {SelectButtonModule} from 'primeng/selectbutton';
+import {UtilsService} from "../../utils.service";
+import {ConfirmationService, ConfirmEventType, MessageService} from "primeng/api";
 
 const httpOptions = {
   headers: new HttpHeaders({
@@ -60,6 +62,7 @@ interface StructureDto {
 
 interface StrsRemsDto {
   creator: string;
+  event_duration: number;
 }
 
 interface NewReminderDTO {
@@ -86,17 +89,20 @@ export class CalendarComponent implements OnInit {
   display: boolean = false;
   selectedDate: Date = new Date();
   reminderDtoList?: Array<ReminderDto>;
+  newReminderDtoList?: Array<NewReminderDTO>;
   endInstance?: string;
   until_date_picked?: Date;
   disableDP: boolean = false;
   disableOcc: boolean = false;
   disableDayOftheWeek: boolean = false;
   instanceType: InstancesType[];
+  instanceSel: InstancesType | undefined;
   title: string = "";
   days: daysOfTheWeek[];
 
 
-  constructor(private http: HttpClient) {
+
+  constructor(private http: HttpClient, private messageService: MessageService) {
     this.unlockElements();
     this.instanceType = [
       {name: "Giorni", code: "RRule.DAILY"},
@@ -124,7 +130,9 @@ export class CalendarComponent implements OnInit {
     repetitionNumber: new FormControl('1' , Validators.required),
     until_date_picked: new FormControl(''),
     occurrencyNumber: new FormControl(""),
-    selectedDays:new FormControl("")
+    selectedDays:new FormControl(""),
+    ora_inizio: new FormControl(""),
+    durata_evento:new FormControl("")
   });
 
   calendarOptions: CalendarOptions = {
@@ -136,7 +144,14 @@ export class CalendarComponent implements OnInit {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: true,
-    weekends: true // includere i weekend nel calendario
+    weekends: true, // includere i weekend nel calendario
+    selectAllow: (info) => {
+      if(UtilsService.selectedDateIsBeforeToday(info.start))
+        return false;
+      return true;
+    },
+    locale: "it",
+    firstDay: 1
   };
 
 
@@ -149,13 +164,35 @@ export class CalendarComponent implements OnInit {
     this.today = str;
     console.log(this.today);
 
-    this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders")
+    /*this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders/approved")
       .subscribe(data => {
         this.reminderDtoList = data;
         console.log(this.reminderDtoList);
         this.CaricaReminderDaDatabase(data);
 
-      });
+      });*/
+    var headers = new HttpHeaders();
+    headers.append("Content-Type", "application/json");
+    headers.append("Accept", "application/json");
+    headers.append("Access-Control-Allow-Headers", "Content-Type");
+    headers.append("email","mattia.zeni.1@unitn.it");
+    headers.append("password","knowdive2access2021");
+    console.log("headers: "+headers.get('email'));//non funzionano gli header FACK!
+    this.http.get<Array<any>>("http://localhost:8090/questionnaires", {
+      headers:headers
+    })
+      .subscribe(data => {
+      console.log("DATI QUESTIONARIES:\n"+data);
+
+    });
+
+    /*this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/approvedfulldata")
+      .subscribe(data => {
+        this.newReminderDtoList = data;
+        console.log(this.reminderDtoList);
+        this.CaricaReminderDaDatabaseFullData(data);
+
+      });*/
 
 
   }
@@ -173,12 +210,16 @@ export class CalendarComponent implements OnInit {
 
       console.log("datestart",dateStart)
 
+      let byDayWeek: Array<ByWeekday> = [];
+      byDayWeek = this.getArrayByWeekday(reminder.r_byweekday);
+
       rule1 = new RRule({
         freq : this.getFrequencyFromString(reminder.r_freq),
         dtstart: dateStart,
-        until: new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]),
+        until: (reminderEndDate==null)? undefined : new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]),
         interval:  reminder.r_interval,
-
+        byweekday: byDayWeek,
+        count: (reminder.r_count==0)? undefined : reminder.r_count
       });
       eventToAddInCalendar.push({title: reminder.r_title, rrule: rule1.toString(), color: 'orange'});
       console.log(rule1.toString());
@@ -186,6 +227,10 @@ export class CalendarComponent implements OnInit {
     }
     //load eventi su calendario
     this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
+  }
+
+  CaricaReminderDaDatabaseFullData(data: Array<NewReminderDTO>) {
+    console.log("aaaa: "+data);
   }
 
   getFrequencyFromString(freq: string): Frequency {
@@ -208,9 +253,18 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  getArrayByWeekday(): ByWeekday[] {
+  //ricrea un array di RRule per il campo byweekday.
+  //se è vuoto prende la stringa da "this.reminderDtoList![0].r_byweekday"
+  //se l'argomento è avvalorato allora rielabora i dati ricevuti dalla
+  // chiamata passandogli una stringa contenente le RRule.MO,RRule.TU ecc.
+  getArrayByWeekday(daysPerWeek : string | undefined): ByWeekday[] {
+    let a = "";
     let byWeekdayArray: Array<ByWeekday> = [];
-    let a = this.reminderDtoList![0].r_byweekday ? this.reminderDtoList![0].r_byweekday : "";
+    if(daysPerWeek == undefined || daysPerWeek == ""){
+      a = this.reminderDtoList![0].r_byweekday ? this.reminderDtoList![0].r_byweekday : "";
+    }else{
+      a = daysPerWeek;
+    }
     if (a != "") {
       a = a.replace("[", "");
       a = a.replace("]", "");
@@ -265,48 +319,36 @@ export class CalendarComponent implements OnInit {
   }
 
   sendRequest() {
-
-    /*let reminderDto: ReminderDto = {
-      r_title: this.title,
-      r_freq: this.selectedInstance!.code,
-      r_dt_start: this.selectedDate!,
-      r_interval: this.repetitionNumber,
-      r_until: this.until_date_picked,
-      r_tzid: "local"
-    };
-    const rule1 = new RRule({
-      freq : this.getFrequencyFromString(this.selectedInstance!.code),
-      interval: this.repetitionNumber,
-      dtstart:this.selectedDate!,
-      until:  this.until_date_picked,
-
-    });*/
-
-    //NEW
     let reminderDto: ReminderDto = {
       r_dt_start: this.selectedDate!,
       r_title: this.profileForm.value.title,
       r_freq: this.profileForm.value.selectedInstance.code,
       r_interval: this.profileForm.value.repetitionNumber,
-      r_until: this.profileForm.value.until_date_picked
+      r_until: (this.profileForm.value.endInstance == "Data")? this.profileForm.value.until_date_picked : undefined,
+      r_count: (this.profileForm.value.endInstance == "Dopo")? this.profileForm.value.occurrencyNumber : undefined,
+      r_byweekday: this.profileForm.value.selectedDays.toString(),
+      r_byhour:this.profileForm.value.ora_inizio.getHours(),
+      r_byminute: this.profileForm.value.ora_inizio.getMinutes(),
+      r_byseconds: this.profileForm.value.ora_inizio.getSeconds()
     };
 
-    const rule1 = new RRule({
+    const rule = new RRule({
       freq : this.getFrequencyFromString(this.profileForm.value.instanceType),
       interval: this.profileForm.value.repetitionNumber,
       dtstart:this.selectedDate!,
       until:  this.profileForm.value.until_date_picked
     });
 
-    console.log(rule1.options)
-    console.log(rule1.toString())
+    console.log(rule.options)
+    console.log(rule.toString())
 
     let structureDto: StructureDto = {
       idQuestionary: 1
     };
 
     let strsRemsDto: StrsRemsDto = {
-      creator: "manuel@Outlook.it"
+      creator: "manuel@Outlook.it",
+      event_duration: this.profileForm.value.durata_evento
     };
 
     var body: NewReminderDTO = {
@@ -319,6 +361,9 @@ export class CalendarComponent implements OnInit {
 
     this.http.post<any>('http://localhost:8080/reminders/create', body).subscribe(data => {
       console.log(data);
+      this.messageService.add({severity:'success', summary: 'Success', detail: 'Dati salvati in attesa di approvazione.'});
+    },error => {
+      this.messageService.add({severity:'error', summary: 'Error', detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'});
     });
 
   }
@@ -331,9 +376,11 @@ export class CalendarComponent implements OnInit {
   }
 
   handleDateClick(event: any) {
-    console.log("click", event)
-    this.selectedDate = event.date;
-    this.showDialog();
+    if(UtilsService.selectedDateIsAfterToday(event.date)) {
+      console.log("click", event)
+      this.selectedDate = event.date;
+      this.showDialog();
+    }
   }
 
   /*addEvents(date: Date) {
@@ -358,6 +405,7 @@ export class CalendarComponent implements OnInit {
     this.calendarComponent?.getApi().addEventSource(event);
 
   }*/
+
 
   toggleWeekends() {
     this.calendarOptions.weekends = !this.calendarOptions.weekends // toggle the boolean!

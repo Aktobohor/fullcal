@@ -1,5 +1,32 @@
-<div class="grid">
-  <div class="col-4"> Lorem ipsum dolor sit amet, consectetur adipisicing elit. Corporis dolores eligendi enim esse et ex, facilis illum magni, maxime, molestiae natus nisi non placeat possimus quaerat quia quidem quos ratione repellat saepe sequi similique ullam vero vitae voluptatibus! Eveniet incidunt natus necessitatibus neque nisi numquam perspiciatis, qui voluptas! Aliquid aperiam architecto assumenda aut commodi consequatur cumque deserunt doloribus dolorum earum eligendi enim eos esse eum ex excepturi exercitationem facilis fuga harum hic illum iste itaque laborum magni maiores modi, mollitia nihil non numquam officiis omnis pariatur quaerat quibusdam similique sunt suscipit tenetur. Enim harum hic impedit provident, sed similique vitae.</div>
-  <div class="col-8"> Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam beatae dicta eos hic illo laboriosam libero magnam modi, mollitia obcaecati optio perferendis possimus praesentium quasi quos sequi sit suscipit unde ut, voluptas? Aspernatur corporis cum cumque deleniti, distinctio dolorem ea eligendi molestiae nam neque nostrum obcaecati perferendis rerum sapiente, voluptatum?</div>
-</div>
 
+<div class="grid">
+  <div class="col-4">
+    <div>RMEMINDERS</div>
+    <div class="grid">
+      <div class="col">TITOLO</div>
+      <div class="col">INIZIO</div>
+      <div class="col">FINE</div>
+      <div class="col"></div>
+    </div>
+    <div class="grid" *ngFor="let a of reminderDtoList" (click)="showRRuleDateList(a.id)">
+      <div class="col">{{a.r_title}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.r_dt_start)}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.r_until)}}</div>
+      <div class="col">
+        <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2" (click)="confirmReminder(a.id)" ></button>
+        <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger" (click)="rejectReminder(a.id)"></button>
+      </div>
+    </div>
+  </div>
+  <div class="col-8">
+
+    <!--<div class="grid" *ngFor="let d of datesList">
+      <div class="col-12">{{d.toString() ? d.toString() : ""}}</div>
+
+    </div>-->
+    <p-confirmDialog [style]="{width: '50vw'}" [baseZIndex]="10000" rejectButtonStyleClass="p-button-text"></p-confirmDialog>
+    <p-toast></p-toast>
+    <full-calendar [options]="calendarOptions" #calendar></full-calendar>
+
+  </div>
+</div>
