@@ -27,7 +27,12 @@
         </span>
       </div>
 
-      <div class="col-6"></div>
+      <div class="col-6">
+        <br>
+        <p-cascadeSelect [options]="elencoDomande!" formControlName="domanda_scelta" optionLabel="id" optionGroupLabel="tipo"
+                         [optionGroupChildren]="['domande']" [style]="{'minWidth': '14rem'}" placeholder="Domanda"></p-cascadeSelect>
+
+      </div>
       <div class="col-6">
         <br>
         <span class="p-float-label">
@@ -42,7 +47,7 @@
         Ripeti ogni <p-inputNumber formControlName="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
       </div>
       <div class="col-6">
-        <p-dropdown [options]="instanceType" [(ngModel)]="instanceSel" formControlName="selectedInstance" id="inputistanza" optionLabel="name" [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
+        <p-dropdown [options]="instanceType" formControlName="selectedInstance" id="inputistanza" optionLabel="name" [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
       </div>
 
       <div class="col-12" [hidden]="disableDayOftheWeek"> Si ripete il  </div>

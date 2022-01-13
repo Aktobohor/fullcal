@@ -25,8 +25,31 @@ interface ReminderDto {
   r_byhour?: string,
   r_byminute?: string,
   r_byseconds?: string,
+  r_string_rule?:string
 }
 
+interface StructureDto {
+  id: number;
+  idQuestionary?: string;
+  idTasks?: string;
+  idChallenges?: string;
+  idRandomTask?: string;
+}
+
+interface StrRemDto {
+  id:number,
+  id_structure: number,
+  id_reminder: number,
+  approved: string,
+  event_duration: number,
+  creator: string
+}
+
+interface NewReminderDTO{
+  reminderDto:ReminderDto,
+  strRmdDto: StrRemDto,
+  structure: StructureDto
+}
 
 @Component({
   selector: 'app-schedule-checker',
@@ -37,7 +60,8 @@ interface ReminderDto {
 
 export class ScheduleCheckerComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
-  reminderDtoList?: Array<ReminderDto>;
+  //reminderDtoList?: Array<ReminderDto>;
+  reminderDtoList?: Array<NewReminderDTO>;
   datesList : Date[] = [];
   position: string = 'top';
 
@@ -68,14 +92,22 @@ export class ScheduleCheckerComponent implements OnInit {
     firstDay: 1
   };
 
-  LoadListaEventiNonApprovati(){
+  /*LoadListaEventiNonApprovati(){
     this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders/notapproved")
       .subscribe(data => {
         this.reminderDtoList = data;
       });
+  }*/
+
+  LoadListaEventiNonApprovati(){
+    this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/notapprovedNEW")
+      .subscribe(data => {
+        this.reminderDtoList = data;
+        console.log(data);
+      });
   }
 
-  showRRuleDateList(id : number | undefined){
+  /*showRRuleDateList(id : number | undefined){
     let eventToAddInCalendar: EventSourceInput = [];
     let reminderFound = this.reminderDtoList?.find(x => x.id == id);
     console.log(reminderFound);
@@ -100,7 +132,7 @@ export class ScheduleCheckerComponent implements OnInit {
 
     UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
 
-  }
+  }*/
 
   confirmReminder(id: number | undefined) {
     console.log("confirmReminder");
@@ -133,7 +165,33 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
   rejectReminder(id: number | undefined) {
-
+    console.log("DeleteReminder");
+    this.confirmationService.confirm({
+      message: 'vuoi eliminare la schedulazione? ',
+      header: 'Confirma',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        console.log("post");
+        this.http.post<any>("http://localhost:8080/reminders/deleteFromId", id)
+          .subscribe(data => {
+            this.LoadListaEventiNonApprovati();
+            UtilsService.refreshCalendarEvents(this.calendarComponent!, null);
+            this.messageService.add({severity:'success', summary: 'Success', detail: 'Evento ricorsivo Eliminato'});
+          },error => {
+            console.error('There was an error!', error);
+          });
+      },
+      reject: (type:any) => {
+        switch(type) {
+          case ConfirmEventType.REJECT:
+            this.messageService.add({severity:'error', summary:'Rejected', detail:'Evento ricorsivo ancora attivo'});
+            break;
+          case ConfirmEventType.CANCEL:
+            this.messageService.add({severity:'warn', summary:'Cancelled', detail:'Chiusa la finestra Evento ancora attivo'});
+            break;
+        }
+      }
+    });
   }
 
   formatDateDD_MM_YYYY(date : Date | number[] | undefined){

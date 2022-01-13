@@ -1,6 +1,6 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
-import {ByWeekday, Frequency, RRule} from "rrule";
+import {ByWeekday, Frequency, RRule, Weekday} from "rrule";
 import {HttpClient, HttpHeaders} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
@@ -9,22 +9,49 @@ import {SelectButtonModule} from 'primeng/selectbutton';
 import {UtilsService} from "../../utils.service";
 import {ConfirmationService, ConfirmEventType, MessageService} from "primeng/api";
 
+const QUESTIONARIES = "Questionaries";
+const TASKS = "Tasks";
+const CHALLENGES = "Challenges";
+const RANDOMTASKS = "RandomTask";
+
 const httpOptions = {
   headers: new HttpHeaders({
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE'
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+    'email': 'admin@example.com',
+    'password':'superPss'
   })
 };
 
-interface daysOfTheWeek {
+interface Questionnaire{
+  id: number,
+  date: string,
+  description: string,
+  duration: number,
   name: string,
-  code: string
+  ordering: string,
+  questionid: string,
+  status: string,
+  target: string
+  timeinterval: number
+}
+interface Question{
+  id: number,
+  content: string,
+  date: string,
+  description: string,
+  name: string
 }
 
-interface Structure {
-  id: number,
-  idQuestionary: number
+interface GroupedQuestion{
+  tipo: string,
+  domande: Array<Question>
+}
+
+interface daysOfTheWeek {
+  name: string,
+  code:  number
 }
 
 interface InstancesType {
@@ -50,14 +77,15 @@ interface ReminderDto {
   r_byhour?: string,
   r_byminute?: string,
   r_byseconds?: string,
+  r_string_rule?:string
 }
 
 interface StructureDto {
   id?: number;
-  idQuestionary?: number;
-  idTask?: number;
-  idChallenges?: number;
-  idRandomTask?: number;
+  idQuestionary?: string;
+  idTasks?: string;
+  idChallenges?: string;
+  idRandomTask?: string;
 }
 
 interface StrsRemsDto {
@@ -99,7 +127,9 @@ export class CalendarComponent implements OnInit {
   instanceSel: InstancesType | undefined;
   title: string = "";
   days: daysOfTheWeek[];
-
+  questionariesList?: Array<Questionnaire>;
+  questionList?: Array<Question>;
+  elencoDomande?: any[] = new Array<GroupedQuestion>();
 
 
   constructor(private http: HttpClient, private messageService: MessageService) {
@@ -112,29 +142,32 @@ export class CalendarComponent implements OnInit {
     ];
 
     this.days = [
-      {name: 'L', code: 'RRule.MO'},
-      {name: 'M', code: 'RRule.TU'},
-      {name: 'M', code: 'RRule.WE'},
-      {name: 'G', code: 'RRule.TH'},
-      {name: 'V', code: 'RRule.FR'},
-      {name: 'S', code: 'RRule.SA'},
-      {name: 'D', code: 'RRule.SU'}
+      {name: 'L', code: 0},
+      {name: 'M', code: 1},
+      {name: 'M', code: 2},
+      {name: 'G', code: 3},
+      {name: 'V', code: 4},
+      {name: 'S', code: 5},
+      {name: 'D', code: 6}
     ];
 
   }
 
+  //init del form presente nella dialog di inserimento dell'evento.
   profileForm = new FormGroup({
     title: new FormControl('', Validators.required),
     endInstance: new FormControl(''),
-    selectedInstance: new FormControl('' , Validators.required),
+    selectedInstance: new FormControl(null , Validators.required),
     repetitionNumber: new FormControl('1' , Validators.required),
     until_date_picked: new FormControl(''),
-    occurrencyNumber: new FormControl(""),
-    selectedDays:new FormControl(""),
-    ora_inizio: new FormControl(""),
-    durata_evento:new FormControl("")
+    occurrencyNumber: new FormControl(''),
+    selectedDays:new FormControl(null),
+    ora_inizio: new FormControl(''),
+    durata_evento:new FormControl(null),
+    domanda_scelta: new FormControl(null)
   });
 
+  //inizializzazione del Calendario
   calendarOptions: CalendarOptions = {
     plugins: [rrulePlugin, dayGridPlugin],
     initialView: 'dayGridMonth',
@@ -156,6 +189,7 @@ export class CalendarComponent implements OnInit {
 
 
   ngOnInit(): void {
+    //init ora attuale
     let str = formatDate(new Date(), {
       hour: 'numeric',
       minute: '2-digit',
@@ -164,6 +198,10 @@ export class CalendarComponent implements OnInit {
     this.today = str;
     console.log(this.today);
 
+    this.getAllQuestionaries();
+
+    this.getAllQestions();
+
     /*this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders/approved")
       .subscribe(data => {
         this.reminderDtoList = data;
@@ -171,20 +209,6 @@ export class CalendarComponent implements OnInit {
         this.CaricaReminderDaDatabase(data);
 
       });*/
-    var headers = new HttpHeaders();
-    headers.append("Content-Type", "application/json");
-    headers.append("Accept", "application/json");
-    headers.append("Access-Control-Allow-Headers", "Content-Type");
-    headers.append("email","mattia.zeni.1@unitn.it");
-    headers.append("password","knowdive2access2021");
-    console.log("headers: "+headers.get('email'));//non funzionano gli header FACK!
-    this.http.get<Array<any>>("http://localhost:8090/questionnaires", {
-      headers:headers
-    })
-      .subscribe(data => {
-      console.log("DATI QUESTIONARIES:\n"+data);
-
-    });
 
     /*this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/approvedfulldata")
       .subscribe(data => {
@@ -194,9 +218,64 @@ export class CalendarComponent implements OnInit {
 
       });*/
 
-
   }
 
+  /**
+   * prendo tutti i questionaries
+   */
+  getAllQuestionaries(){
+    this.http.get<Array<Questionnaire>>("http://localhost:8090/questionnaires", httpOptions)
+      .subscribe(data => {
+        this.questionariesList = data;
+        //mostro sul calendario tutte le ricorrenze della tabella questionaries (discriminare in base allo stato)
+        this.CaricaQuestionariesDaDatabase(data);
+      });
+  }
+
+  /**
+   * Recupero tutte le domande (di questionaries).
+   */
+  getAllQestions(){
+    this.http.get<Array<Question>>("http://localhost:8090/questions", httpOptions)
+      .subscribe(data => {
+        this.questionList = data;
+
+        let tmp = {
+          tipo: QUESTIONARIES,
+          domande: data
+        }
+        console.log(tmp);
+        this.elencoDomande?.push(tmp);
+      });
+  }
+
+  CaricaQuestionariesDaDatabase(data: Array<Questionnaire>) {
+
+    let eventToAddInCalendar: EventSourceInput = [];
+    var rule: RRule;
+    for (let questionarie of data) {
+
+      let reminderStartDate = new Date(questionarie.date);
+      console.log(reminderStartDate);
+
+      let byDayWeek: Array<ByWeekday> = [];
+
+      rule = new RRule({
+        dtstart: reminderStartDate,
+        count: 1
+      });
+      eventToAddInCalendar.push({title: questionarie.name, rrule: rule.toString(), color: 'orange'});
+      console.log(rule.toString());
+      console.log(rule.all());
+    }
+    //load eventi su calendario
+    this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
+  }
+
+  /**
+   * reminder da db per visualizzare le ricorrenze
+   * @Array<ReminderDto> data
+   */
   CaricaReminderDaDatabase(data: Array<ReminderDto>) {
 
     let eventToAddInCalendar: EventSourceInput = [];
@@ -229,10 +308,10 @@ export class CalendarComponent implements OnInit {
     this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
   }
 
-  CaricaReminderDaDatabaseFullData(data: Array<NewReminderDTO>) {
-    console.log("aaaa: "+data);
-  }
-
+  /**
+   * mappatura string -> RRule
+   * @stirng freq
+   */
   getFrequencyFromString(freq: string): Frequency {
     switch (freq) {
       case "RRule.DAILY": {
@@ -253,10 +332,13 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  //ricrea un array di RRule per il campo byweekday.
-  //se è vuoto prende la stringa da "this.reminderDtoList![0].r_byweekday"
-  //se l'argomento è avvalorato allora rielabora i dati ricevuti dalla
-  // chiamata passandogli una stringa contenente le RRule.MO,RRule.TU ecc.
+  /**
+   * ricrea un array di RRule per il campo byweekday.
+   * se è vuoto prende la stringa da "this.reminderDtoList![0].r_byweekday"
+   * se l'argomento è avvalorato allora rielabora i dati ricevuti dalla
+   * chiamata passandogli una stringa contenente le RRule.MO,RRule.TU ecc.
+   * @string daysPerWeek
+   */
   getArrayByWeekday(daysPerWeek : string | undefined): ByWeekday[] {
     let a = "";
     let byWeekdayArray: Array<ByWeekday> = [];
@@ -272,31 +354,31 @@ export class CalendarComponent implements OnInit {
       array = a.split(",");
       for (let r of array) {
         switch (r) {
-          case "RRule.MO": {
+          case "0": {
             byWeekdayArray.push(RRule.MO);
             break;
           }
-          case "RRule.TU": {
+          case "1": {
             byWeekdayArray.push(RRule.TU);
             break;
           }
-          case "RRule.WE": {
+          case "2": {
             byWeekdayArray.push(RRule.WE);
             break;
           }
-          case "RRule.TH": {
+          case "3": {
             byWeekdayArray.push(RRule.TH);
             break;
           }
-          case "RRule.FR": {
+          case "4": {
             byWeekdayArray.push(RRule.FR);
             break;
           }
-          case "RRule.SA": {
+          case "5": {
             byWeekdayArray.push(RRule.SA);
             break;
           }
-          case "RRule.SU": {
+          case "6": {
             byWeekdayArray.push(RRule.SU);
             break;
           }
@@ -318,39 +400,78 @@ export class CalendarComponent implements OnInit {
     console.log(this.profileForm.value);
   }
 
+  /**
+   * invio richiesta di creazione delle ricorrenze di un evento in base alle info inserite
+   */
   sendRequest() {
+
+    //necessaria per generare la RRULE come stringa da salvare a DB.
+    let rule = new RRule({
+      freq: this.getFrequencyFromString(this.profileForm.value.instanceType),
+      interval: this.profileForm.value.repetitionNumber,
+      dtstart: this.selectedDate!,
+      until: this.profileForm.value.until_date_picked,
+      count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
+      byweekday: this.profileForm.value.selectedDays, //array di numeri per creare correttamente la RRule in stringa
+      byhour: this.profileForm.value.ora_inizio.getHours(),
+      byminute: this.profileForm.value.ora_inizio.getMinutes(),
+      bysecond: this.profileForm.value.ora_inizio.getSeconds()
+    });
+
+    //informazioni delle RRULE che possono essere utilizzate per creare la RRULE.
     let reminderDto: ReminderDto = {
       r_dt_start: this.selectedDate!,
       r_title: this.profileForm.value.title,
       r_freq: this.profileForm.value.selectedInstance.code,
       r_interval: this.profileForm.value.repetitionNumber,
-      r_until: (this.profileForm.value.endInstance == "Data")? this.profileForm.value.until_date_picked : undefined,
-      r_count: (this.profileForm.value.endInstance == "Dopo")? this.profileForm.value.occurrencyNumber : undefined,
-      r_byweekday: this.profileForm.value.selectedDays.toString(),
-      r_byhour:this.profileForm.value.ora_inizio.getHours(),
+      r_until: (this.profileForm.value.endInstance == "Data") ? this.profileForm.value.until_date_picked : undefined,
+      r_count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
+      r_byweekday: (this.profileForm.value.selectedDays == null) ? "" : this.profileForm.value.selectedDays.toString(), //in stringa perche a db salviamo l'array di interi in stringa.
+      r_byhour: this.profileForm.value.ora_inizio.getHours(),
       r_byminute: this.profileForm.value.ora_inizio.getMinutes(),
-      r_byseconds: this.profileForm.value.ora_inizio.getSeconds()
+      r_byseconds: this.profileForm.value.ora_inizio.getSeconds(),
+      r_string_rule: rule.toString()
     };
 
-    const rule = new RRule({
-      freq : this.getFrequencyFromString(this.profileForm.value.instanceType),
-      interval: this.profileForm.value.repetitionNumber,
-      dtstart:this.selectedDate!,
-      until:  this.profileForm.value.until_date_picked
-    });
+    //informazioni sul questionario.
+    debugger
+    let structureDto: StructureDto = {};
+    //recupero tipo di domanda in base alla domanda selezionata.
+    let qType = this.elencoDomande?.find(t=>t.domande[0].id == this.profileForm.value.domanda_scelta.id).tipo;
+    switch(qType){
+      case QUESTIONARIES:{
+        structureDto = {
+          idQuestionary: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case TASKS:{
+        structureDto = {
+          idTasks: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case CHALLENGES:{
+        structureDto = {
+          idChallenges: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case RANDOMTASKS:{
+        structureDto = {
+          idRandomTask: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+    }
 
-    console.log(rule.options)
-    console.log(rule.toString())
-
-    let structureDto: StructureDto = {
-      idQuestionary: 1
-    };
-
+    //informazioni sulla tabella delle relazioni.
     let strsRemsDto: StrsRemsDto = {
       creator: "manuel@Outlook.it",
       event_duration: this.profileForm.value.durata_evento
     };
 
+    //oggetto che racchiude le 3 informazioni.
     var body: NewReminderDTO = {
       reminderDto: reminderDto,
       structureDto: structureDto,
@@ -365,7 +486,6 @@ export class CalendarComponent implements OnInit {
     },error => {
       this.messageService.add({severity:'error', summary: 'Error', detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'});
     });
-
   }
 
   salvaEvento() {

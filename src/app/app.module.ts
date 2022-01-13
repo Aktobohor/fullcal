@@ -24,6 +24,7 @@ import { ReactiveFormsModule } from '@angular/forms';
 import {SelectButtonModule} from "primeng/selectbutton";
 import {ConfirmDialogModule} from "primeng/confirmdialog";
 import {ToastModule} from "primeng/toast";
+import {CascadeSelectModule} from "primeng/cascadeselect";
 
 
 // @ts-ignore
@@ -41,28 +42,28 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
     ScheduleCheckerComponent,
 
   ],
-  imports: [
-    BrowserModule,
-    HttpClientModule,
-    BrowserAnimationsModule,
-    AppRoutingModule,
-    FullCalendarModule,
-    OverlayPanelModule,
-    ButtonModule,
-    FullCalendarModule,
-    DialogModule,
-    FormsModule,
-    InputNumberModule,
-    RadioButtonModule,
-    CalendarModule,
-    DropdownModule,
-    InputTextModule,
-    ReactiveFormsModule,
-    SelectButtonModule,
-    ConfirmDialogModule,
-    ToastModule
-
-  ],
+    imports: [
+        BrowserModule,
+        HttpClientModule,
+        BrowserAnimationsModule,
+        AppRoutingModule,
+        FullCalendarModule,
+        OverlayPanelModule,
+        ButtonModule,
+        FullCalendarModule,
+        DialogModule,
+        FormsModule,
+        InputNumberModule,
+        RadioButtonModule,
+        CalendarModule,
+        DropdownModule,
+        InputTextModule,
+        ReactiveFormsModule,
+        SelectButtonModule,
+        ConfirmDialogModule,
+        ToastModule,
+        CascadeSelectModule
+    ],
   providers: [],
   bootstrap: [AppComponent]
 })

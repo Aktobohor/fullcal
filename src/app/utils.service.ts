@@ -69,31 +69,31 @@ export class UtilsService {
       array = a.split(",");
       for (let r of array) {
         switch (r) {
-          case "RRule.MO": {
+          case "0": {
             byWeekdayArray.push(RRule.MO);
             break;
           }
-          case "RRule.TU": {
+          case "1": {
             byWeekdayArray.push(RRule.TU);
             break;
           }
-          case "RRule.WE": {
+          case "2": {
             byWeekdayArray.push(RRule.WE);
             break;
           }
-          case "RRule.TH": {
+          case "3": {
             byWeekdayArray.push(RRule.TH);
             break;
           }
-          case "RRule.FR": {
+          case "4": {
             byWeekdayArray.push(RRule.FR);
             break;
           }
-          case "RRule.SA": {
+          case "5": {
             byWeekdayArray.push(RRule.SA);
             break;
           }
-          case "RRule.SU": {
+          case "6": {
             byWeekdayArray.push(RRule.SU);
             break;
           }
