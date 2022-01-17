@@ -6,6 +6,22 @@ import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import {UtilsService} from "../../utils.service";
 import {ConfirmationService, ConfirmEventType, MessageService} from "primeng/api";
+import {FormControl, FormGroup, Validators} from "@angular/forms";
+
+const httpOptions = {
+  headers: new HttpHeaders({
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
+    'email': 'admin@example.com',
+    'password':'superPss'
+  })
+};
+
+const QUESTIONARIES = "Questionaries";
+const TASKS = "Tasks";
+const CHALLENGES = "Challenges";
+const RANDOMTASKS = "RandomTask";
 
 interface ReminderDto {
   id?: number,
@@ -29,7 +45,7 @@ interface ReminderDto {
 }
 
 interface StructureDto {
-  id: number;
+  id?: number;
   idQuestionary?: string;
   idTasks?: string;
   idChallenges?: string;
@@ -37,18 +53,61 @@ interface StructureDto {
 }
 
 interface StrRemDto {
-  id:number,
-  id_structure: number,
-  id_reminder: number,
-  approved: string,
-  event_duration: number,
-  creator: string
+  id?:number,
+  id_structure?: number,
+  id_reminder?: number,
+  approved?: string,
+  event_duration?: number,
+  creator?: string
+  event_color?: string,
 }
 
 interface NewReminderDTO{
   reminderDto:ReminderDto,
-  strRmdDto: StrRemDto,
-  structure: StructureDto
+  strsRemsDto: StrRemDto,
+  structureDto: StructureDto
+}
+
+interface StrsRemsDto {
+  creator: string,
+  event_duration: number,
+  event_color:string
+}
+
+interface Questionnaire{
+  id: number,
+  date: string,
+  description: string,
+  duration: number,
+  name: string,
+  ordering: string,
+  questionid: string,
+  status: string,
+  target: string
+  timeinterval: number
+}
+
+interface Question{
+  id: number,
+  content: string,
+  date: string,
+  description: string,
+  name: string
+}
+
+interface GroupedQuestion{
+  tipo: string,
+  domande: Array<Question>
+}
+
+interface daysOfTheWeek {
+  name: string,
+  code:  number
+}
+
+interface InstancesType {
+  name: string,
+  code: string
 }
 
 @Component({
@@ -60,23 +119,81 @@ interface NewReminderDTO{
 
 export class ScheduleCheckerComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
-  //reminderDtoList?: Array<ReminderDto>;
   reminderDtoList?: Array<NewReminderDTO>;
-  datesList : Date[] = [];
-  position: string = 'top';
+  today = "";
+  display: boolean = false;
+  selectedDate: Date = new Date();
+  endInstance?: string;
+  until_date_picked?: Date;
+  disableDP: boolean = false;
+  disableOcc: boolean = false;
+  disableDayOftheWeek: boolean = false;
+  instanceType: InstancesType[];
+  instanceSel: InstancesType | undefined;
+  title: string = "";
+  days: daysOfTheWeek[];
+  questionariesList?: Array<Questionnaire>;
+  questionList?: Array<Question>;
+  elencoDomande?: any[] = new Array<GroupedQuestion>();
+  disableBtnNA:boolean=false;
+  disableBtnQ:boolean=false;
+
 
   constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService){
+
+    this.unlockElements();
+    this.instanceType = [
+      {name: "Giorni", code: "RRule.DAILY"},
+      {name: "Settimane", code: "RRule.WEEKLY"},
+      {name: "Mesi", code: "RRule.MONTHLY"},
+      {name: "Anni", code: "RRule.YEARLY"}
+    ];
+
+    this.days = [
+      {name: 'L', code: 0},
+      {name: 'M', code: 1},
+      {name: 'M', code: 2},
+      {name: 'G', code: 3},
+      {name: 'V', code: 4},
+      {name: 'S', code: 5},
+      {name: 'D', code: 6}
+    ];
+
 
   }
 
   ngOnInit(): void {
     this.LoadListaEventiNonApprovati();
+    let str = formatDate(new Date(), {
+      hour: 'numeric',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+    this.today = str;
+    console.log(this.today);
+
+    this.getAllQestions();
   }
+
+  //init del form presente nella dialog di inserimento dell'evento.
+  profileForm = new FormGroup({
+    title: new FormControl('', Validators.required),
+    endInstance: new FormControl(''),
+    selectedInstance: new FormControl(null , Validators.required),
+    repetitionNumber: new FormControl('1' , Validators.required),
+    until_date_picked: new FormControl(''),
+    occurrencyNumber: new FormControl(''),
+    selectedDays:new FormControl(null),
+    ora_inizio: new FormControl(''),
+    durata_evento:new FormControl(null),
+    domanda_scelta: new FormControl(null),
+    colore_evento: new FormControl("")
+  });
 
   calendarOptions: CalendarOptions = {
     plugins: [rrulePlugin, dayGridPlugin],
     initialView: 'dayGridMonth',
-    //dateClick: this.handleDateClick.bind(this), // bind is important!
+    dateClick: this.handleDateClick.bind(this), // bind is important!
     events: [],
     editable: true,
     selectable: true,
@@ -92,47 +209,43 @@ export class ScheduleCheckerComponent implements OnInit {
     firstDay: 1
   };
 
-  /*LoadListaEventiNonApprovati(){
-    this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders/notapproved")
-      .subscribe(data => {
-        this.reminderDtoList = data;
-      });
-  }*/
-
   LoadListaEventiNonApprovati(){
+    this.disableBtnNA = true;
+    this.disableBtnQ = false;
+
     this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/notapprovedNEW")
       .subscribe(data => {
         this.reminderDtoList = data;
-        console.log(data);
+        //console.log(data);
+        this.showAllRRuleDateList();
       });
   }
 
-  /*showRRuleDateList(id : number | undefined){
+  LoadQuestionaries(){
+    this.disableBtnQ = true;
+    this.disableBtnNA = false;
+
+    this.getAllQuestionaries();
+  }
+
+  showAllRRuleDateList(){
     let eventToAddInCalendar: EventSourceInput = [];
-    let reminderFound = this.reminderDtoList?.find(x => x.id == id);
+    for (let r of this.reminderDtoList!){
+      eventToAddInCalendar.push({title: r.reminderDto.r_title, rrule: r.reminderDto.r_string_rule, color: r.strsRemsDto.event_color, duration:r.strsRemsDto.event_duration });
+    }
+    UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
+  }
+
+  showRRuleDateList(id : number | undefined){
+    let eventToAddInCalendar: EventSourceInput = [];
+    let reminderFound = this.reminderDtoList!.find(x => x.strsRemsDto.id == id);
     console.log(reminderFound);
 
-    const reminderStartDate = reminderFound?.r_dt_start as Array<number>;
-    const reminderEndDate = reminderFound?.r_until as Array<number>;
-    let dateStart = new Date(reminderStartDate[0], reminderStartDate[1] - 1, reminderStartDate[2], reminderStartDate[3], reminderStartDate[4]);
-
-    let byDayWeek: Array<ByWeekday> = [];
-    byDayWeek = UtilsService.getArrayByWeekday(reminderFound?.r_byweekday);
-
-    let rule = new RRule({
-      freq : UtilsService.getFrequencyFromString(reminderFound?.r_freq),
-      dtstart: dateStart,
-      until: (reminderEndDate==null)? undefined : new Date(reminderEndDate[0], reminderEndDate[1] - 1, reminderEndDate[2], reminderEndDate[3], reminderEndDate[4]),
-      interval:  reminderFound?.r_interval,
-      byweekday: byDayWeek,
-      count: (reminderFound?.r_count==0)? undefined : reminderFound?.r_count
-    });
-
-    eventToAddInCalendar.push({title: reminderFound?.r_title, rrule: rule.toString(), color: 'blue'});
+    eventToAddInCalendar.push({title: reminderFound!.reminderDto.r_title, rrule: reminderFound!.reminderDto.r_string_rule, color: reminderFound!.strsRemsDto.event_color,  duration: reminderFound!.strsRemsDto.event_duration });
 
     UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
 
-  }*/
+  }
 
   confirmReminder(id: number | undefined) {
     console.log("confirmReminder");
@@ -197,4 +310,207 @@ export class ScheduleCheckerComponent implements OnInit {
   formatDateDD_MM_YYYY(date : Date | number[] | undefined){
     return UtilsService.formatDateDD_MM_YYYY(date);
   }
+
+  /**
+   * invio richiesta di creazione delle ricorrenze di un evento in base alle info inserite
+   */
+  sendRequest() {
+
+    //necessaria per generare la RRULE come stringa da salvare a DB.
+    let rule = new RRule({
+      freq: this.getFrequencyFromString(this.profileForm.value.instanceType),
+      interval: this.profileForm.value.repetitionNumber,
+      dtstart: this.selectedDate!,
+      until: this.profileForm.value.until_date_picked,
+      count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
+      byweekday: this.profileForm.value.selectedDays, //array di numeri per creare correttamente la RRule in stringa
+      byhour: this.profileForm.value.ora_inizio.getHours(),
+      byminute: this.profileForm.value.ora_inizio.getMinutes(),
+      bysecond: this.profileForm.value.ora_inizio.getSeconds()
+    });
+
+    //informazioni delle RRULE che possono essere utilizzate per creare la RRULE.
+    let reminderDto: ReminderDto = {
+      r_dt_start: this.selectedDate!,
+      r_title: this.profileForm.value.title,
+      r_freq: this.profileForm.value.selectedInstance.code,
+      r_interval: this.profileForm.value.repetitionNumber,
+      r_until: (this.profileForm.value.endInstance == "Data") ? this.profileForm.value.until_date_picked : undefined,
+      r_count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
+      r_byweekday: (this.profileForm.value.selectedDays == null) ? "" : this.profileForm.value.selectedDays.toString(), //in stringa perche a db salviamo l'array di interi in stringa.
+      r_byhour: this.profileForm.value.ora_inizio.getHours(),
+      r_byminute: this.profileForm.value.ora_inizio.getMinutes(),
+      r_byseconds: this.profileForm.value.ora_inizio.getSeconds(),
+      r_string_rule: rule.toString()
+    };
+
+    //informazioni sul questionario.
+    let structureDto: StructureDto = {};
+    //recupero tipo di domanda in base alla domanda selezionata.
+    let qType = this.elencoDomande?.find(t=>t.domande[0].id == this.profileForm.value.domanda_scelta.id).tipo;
+    switch(qType){
+      case QUESTIONARIES:{
+        structureDto = {
+          idQuestionary: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case TASKS:{
+        structureDto = {
+          idTasks: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case CHALLENGES:{
+        structureDto = {
+          idChallenges: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+      case RANDOMTASKS:{
+        structureDto = {
+          idRandomTask: this.profileForm.value.domanda_scelta.id
+        };
+        break;
+      }
+    }
+
+    //informazioni sulla tabella delle relazioni.
+    let strsRemsDto: StrsRemsDto = {
+      creator: "manuel@Outlook.it",
+      event_duration: this.profileForm.value.durata_evento,
+      event_color: this.profileForm.value.event_color
+    };
+
+    //oggetto che racchiude le 3 informazioni.
+    var body: NewReminderDTO = {
+      reminderDto: reminderDto,
+      strsRemsDto: strsRemsDto,
+      structureDto: structureDto
+    };
+
+    console.log(body);
+
+    this.http.post<any>('http://localhost:8080/reminders/create', body).subscribe(data => {
+      console.log(data);
+      this.messageService.add({severity:'success', summary: 'Success', detail: 'Dati salvati in attesa di approvazione.'});
+      this.LoadListaEventiNonApprovati();
+    },error => {
+      this.messageService.add({severity:'error', summary: 'Error', detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'});
+    });
+  }
+
+  /**
+   * mappatura string -> RRule
+   * @stirng freq
+   */
+  getFrequencyFromString(freq: string): Frequency {
+    switch (freq) {
+      case "RRule.DAILY": {
+        return RRule.DAILY;
+      }
+      case "RRule.WEEKLY": {
+        return RRule.WEEKLY;
+      }
+      case "RRule.MONTHLY": {
+        return RRule.MONTHLY;
+      }
+      case "RRule.YEARLY": {
+        return RRule.YEARLY;
+      }
+      default: {
+        return RRule.DAILY;
+      }
+    }
+  }
+
+  unlockElements() {
+    if (this.profileForm.value.endInstance != null && this.profileForm.value.endInstance == "Data") {
+      this.disableDP = false;
+    } else {
+      this.disableDP = true;
+    }
+    if (this.profileForm.value.endInstance != null && this.profileForm.value.endInstance == "Dopo") {
+      this.disableOcc = false;
+    } else {
+      this.disableOcc = true;
+    }
+    if ( this.profileForm.value.selectedInstance != null && this.profileForm.value.selectedInstance.code == "RRule.WEEKLY") {
+      this.disableDayOftheWeek = false;
+    } else {
+      this.disableDayOftheWeek = true;
+    }
+
+  }
+
+  /**
+   * Recupero tutte le domande (di questionaries).
+   */
+  getAllQestions(){
+    this.http.get<Array<Question>>("http://localhost:8090/questions", httpOptions)
+      .subscribe(data => {
+        this.questionList = data;
+
+        let tmp = {
+          tipo: QUESTIONARIES,
+          domande: data
+        }
+        console.log(tmp);
+        this.elencoDomande?.push(tmp);
+      });
+  }
+
+  /**
+   * prendo tutti i questionaries
+   */
+  getAllQuestionaries(){
+    this.http.get<Array<Questionnaire>>("http://localhost:8090/questionnaires", httpOptions)
+      .subscribe(data => {
+        this.questionariesList = data;
+        //mostro sul calendario tutte le ricorrenze della tabella questionaries (discriminare in base allo stato)
+        this.CaricaQuestionariesDaDatabase(this.questionariesList);
+      });
+  }
+
+  /**
+   * Carica le domande già approvate per visualizzazione su calendario.
+   * @param data
+   * @constructor
+   */
+  CaricaQuestionariesDaDatabase(data: Array<Questionnaire>) {
+
+    let eventToAddInCalendar: EventSourceInput = [];
+    for (let questionarie of data) {
+
+      let reminderStartDate = new Date(questionarie.date);
+
+      eventToAddInCalendar.push({title: questionarie.name, date: reminderStartDate, color: 'Green'});
+    }
+    UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
+  }
+
+  salvaEvento() {
+    console.log("/////////////" + this.selectedDate);
+    //this.addEvents(this.selectedDate!);
+    this.sendRequest();
+    this.closeDialog();
+  }
+
+  handleDateClick(event: any) {
+    if(UtilsService.selectedDateIsAfterToday(event.date)) {
+      console.log("click", event)
+      this.selectedDate = event.date;
+      this.showDialog();
+    }
+  }
+
+  showDialog(){
+    this.display = true;
+  }
+
+  closeDialog() {
+    this.display = false;
+  }
+
+
 }

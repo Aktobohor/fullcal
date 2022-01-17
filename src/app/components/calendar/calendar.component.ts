@@ -1,13 +1,12 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
-import {ByWeekday, Frequency, RRule, Weekday} from "rrule";
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {ByWeekday, Frequency, RRule} from "rrule";
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
-import {FormGroup, FormControl, Validators} from '@angular/forms';
-import {SelectButtonModule} from 'primeng/selectbutton';
+import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {UtilsService} from "../../utils.service";
-import {ConfirmationService, ConfirmEventType, MessageService} from "primeng/api";
+import {MessageService} from "primeng/api";
 
 const QUESTIONARIES = "Questionaries";
 const TASKS = "Tasks";
@@ -89,8 +88,9 @@ interface StructureDto {
 }
 
 interface StrsRemsDto {
-  creator: string;
-  event_duration: number;
+  creator: string,
+  event_duration: number,
+  event_color:string
 }
 
 interface NewReminderDTO {
@@ -130,7 +130,7 @@ export class CalendarComponent implements OnInit {
   questionariesList?: Array<Questionnaire>;
   questionList?: Array<Question>;
   elencoDomande?: any[] = new Array<GroupedQuestion>();
-
+  color: string = "";
 
   constructor(private http: HttpClient, private messageService: MessageService) {
     this.unlockElements();
@@ -164,7 +164,8 @@ export class CalendarComponent implements OnInit {
     selectedDays:new FormControl(null),
     ora_inizio: new FormControl(''),
     durata_evento:new FormControl(null),
-    domanda_scelta: new FormControl(null)
+    domanda_scelta: new FormControl(null),
+    colore_evento: new FormControl("")
   });
 
   //inizializzazione del Calendario
@@ -252,21 +253,22 @@ export class CalendarComponent implements OnInit {
   CaricaQuestionariesDaDatabase(data: Array<Questionnaire>) {
 
     let eventToAddInCalendar: EventSourceInput = [];
-    var rule: RRule;
+
+    /*let color = ""; //SEZIONE NECESSARIA PER RECUPERARE COLORE DELL'EVENTO.
+    let tmpId = 0, strmId = 0;*/
     for (let questionarie of data) {
-
+      //SEZIONE NECESSARIA PER RECUPERARE COLORE DELL'EVENTO.
+      /*strmId = this.recoverStrmRemsIDfromQuestionariesID(questionarie.id.toString());
+      if(strmId != tmpId){
+        //getColorFromReminders
+        this.getColorFromReminderEvent(this.recoverStrmRemsIDfromQuestionariesID(questionarie.id.toString()))
+      }
+      tmpId = strmId;
+    */
       let reminderStartDate = new Date(questionarie.date);
-      console.log(reminderStartDate);
 
-      let byDayWeek: Array<ByWeekday> = [];
-
-      rule = new RRule({
-        dtstart: reminderStartDate,
-        count: 1
-      });
-      eventToAddInCalendar.push({title: questionarie.name, rrule: rule.toString(), color: 'orange'});
-      console.log(rule.toString());
-      console.log(rule.all());
+      eventToAddInCalendar.push({title: questionarie.name, date:reminderStartDate , color: this.color, duration:600});
+      //console.log(questionarie.date);
     }
     //load eventi su calendario
     this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
@@ -434,7 +436,6 @@ export class CalendarComponent implements OnInit {
     };
 
     //informazioni sul questionario.
-    debugger
     let structureDto: StructureDto = {};
     //recupero tipo di domanda in base alla domanda selezionata.
     let qType = this.elencoDomande?.find(t=>t.domande[0].id == this.profileForm.value.domanda_scelta.id).tipo;
@@ -468,7 +469,8 @@ export class CalendarComponent implements OnInit {
     //informazioni sulla tabella delle relazioni.
     let strsRemsDto: StrsRemsDto = {
       creator: "manuel@Outlook.it",
-      event_duration: this.profileForm.value.durata_evento
+      event_duration: this.profileForm.value.durata_evento,
+      event_color: this.profileForm.value.colore_evento
     };
 
     //oggetto che racchiude le 3 informazioni.
@@ -503,30 +505,6 @@ export class CalendarComponent implements OnInit {
     }
   }
 
-  /*addEvents(date: Date) {
-    const rule = new RRule({
-      freq: RRule.WEEKLY,
-      interval: 2,
-      byweekday: [RRule.MO, RRule.FR],
-      dtstart: new Date(date),
-      until: new Date(Date.UTC(2022, 12, 31))
-    })
-
-
-    let event = [
-      {
-        title: 'event 1', color: 'red', allDay: true, rrule: rule.origOptions
-      }
-    ]
-
-    console.log(rule.toString())
-    console.log(rule.toText())
-
-    this.calendarComponent?.getApi().addEventSource(event);
-
-  }*/
-
-
   toggleWeekends() {
     this.calendarOptions.weekends = !this.calendarOptions.weekends // toggle the boolean!
   }
@@ -551,4 +529,20 @@ export class CalendarComponent implements OnInit {
   }
 
 
+  recoverStrmRemsIDfromQuestionariesID(qId : string) : number{
+    let a = (qId.substr(10)).split("/");
+    //console.log(a[0]);
+    return Number(a[0]);
+  }
+
+  private getColorFromReminderEvent(qId: number){
+    //GET COLOR
+    const params = new HttpParams().append('strmRemId', qId);
+
+    this.http.get("http://localhost:8080/reminders/colorazione", {params, responseType: 'text'})
+      .subscribe(data => {
+          //console.log(data);
+          this.color = data;
+      });
+  }
 }
