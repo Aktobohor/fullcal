@@ -557,4 +557,35 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
 
+  deleteQuestionarie(id: string) {
+    console.log("confirmReminder");
+    this.confirmationService.confirm({
+      message: 'Vuoi proseguire con l\'eliminazione dell\'evento? ',
+      header: 'Confirma',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        console.log("post");
+        this.http.post<any>("http://localhost:8080/reminders/deleteQuestionarieFromid", id)
+          .subscribe(data => {
+            this.getAllQuestionaries();
+            this.closeDialog();
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento eliminato'});
+          }, error => {
+            console.error('There was an error!', error);
+          });
+      },
+      reject: (type: any) => {
+        switch (type) {
+          case ConfirmEventType.REJECT:
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento non eliminato'});
+            break;
+          case ConfirmEventType.CANCEL:
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Ciusa la finestra di eliminazione'});
+            break;
+        }
+      }
+    });
+
+
+  }
 }

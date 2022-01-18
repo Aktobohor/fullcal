@@ -140,19 +140,22 @@
 </p-dialog>
 
 
-<p-dialog header="Dettaglio" [(visible)]="displayDetailModal" [modal]="true" [style]="{width: '50vw'}"
+<p-dialog header="Dettaglio" [(visible)]="displayDetailModal" [modal]="true" [style]="{width: '25vw'}"
           [draggable]="false" [resizable]="false">
   <div class="p-m-0" *ngIf="this.selectedReminderNADetail">
     <p><span class="font-bold">Domanda: </span>{{this.selectedReminderNADetail!.structureDto!.idQuestionary}}</p>
-    <p><span class="font-bold">Data: </span>{{this.selectedReminderNADetail!.reminderDto!.r_dt_start}}</p>
-    <p><span class="font-bold">Ora: </span></p>
-    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto!.event_duration}}</p>
+    <p><span class="font-bold">Data: </span>{{this.selectedDate.toDateString()}}</p>
+    <p><span class="font-bold">Ora: </span>{{this.selectedReminderNADetail!.reminderDto.r_byhour+":"+this.selectedReminderNADetail!.reminderDto.r_byminute}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto!.event_duration+" min"}}</p>
   </div>
 
   <div class="p-m-0" *ngIf="this.selectedReminderQDetail">
     <p><span class="font-bold">Domanda: </span>{{this.selectedReminderQDetail!.questionid}}</p>
-    <p><span class="font-bold">Data: </span>{{this.selectedReminderQDetail!.date |  date:'long'}}</p>
-    <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration}}</p>
+    <p><span class="font-bold">Data: </span>{{this.selectedDate.toDateString()}}</p>
+    <p><span class="font-bold">Ora: </span>{{this.selectedReminderQDetail!.date.substr(11,5)}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
+    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
+            (click)="deleteQuestionarie(this.selectedReminderQDetail!.id)"></button>
   </div>
 
 </p-dialog>
