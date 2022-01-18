@@ -1,32 +1,37 @@
 <div class="grid">
   <div class="col-4">
-    <p-button (onClick)="LoadListaEventiNonApprovati()" [disabled]="disableBtnNA" >Non Approvati</p-button>
+    <p-button (onClick)="LoadListaEventiNonApprovati()" [disabled]="disableBtnNA">Non Approvati</p-button>
     <p-button (onClick)="LoadQuestionaries()" [disabled]="disableBtnQ">Schedulati</p-button>
-    <div>RMEMINDERS</div>
-      <div class="grid">
-        <div class="col">TITOLO</div>
-        <div class="col">INIZIO</div>
-        <div class="col">FINE</div>
-        <div class="col"></div>
-      </div>
+    <br><br>
+    <div>RMEMINDERS NON APPROVATI</div>
+    <br>
+    <div class="grid">
+      <div class="col">TITOLO</div>
+      <div class="col">INIZIO</div>
+      <div class="col">FINE</div>
+      <div class="col"></div>
+    </div>
     <div class="grid" *ngFor="let a of reminderDtoList" (click)="showRRuleDateList(a.strsRemsDto.id)">
-        <div class="col">{{a.reminderDto.r_title}}</div>
-        <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_dt_start)}}</div>
-        <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_until)}}</div>
-        <div class="col">
-          <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2" (click)="confirmReminder(a.strsRemsDto.id)" ></button>
-          <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger" (click)="rejectReminder(a.strsRemsDto.id)"></button>
-        </div>
+      <div class="col">{{a.reminderDto.r_title}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_dt_start)}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_until)}}</div>
+      <div class="col">
+        <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2"
+                (click)="confirmReminder(a.strsRemsDto.id)"></button>
+        <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
+                (click)="rejectReminder(a.strsRemsDto.id)"></button>
+      </div>
     </div>
   </div>
   <div class="col-8">
-    <p-confirmDialog [style]="{width: '50vw'}" [baseZIndex]="10000" rejectButtonStyleClass="p-button-text"></p-confirmDialog>
+    <p-confirmDialog [style]="{width: '50vw'}" [baseZIndex]="10000"
+                     rejectButtonStyleClass="p-button-text"></p-confirmDialog>
     <p-toast></p-toast>
     <full-calendar [options]="calendarOptions" #calendar></full-calendar>
 
   </div>
 </div>
-<p-dialog header="Inserisci un evento" [(visible)]="display" [style]="{width:'500px'}" [modal]="true" position="top" >
+<p-dialog header="Inserisci un evento" [(visible)]="display" [style]="{width:'500px'}" [modal]="true" position="top">
 
   <ng-template pTemplate="header">
     <h3>Ricorrenza personalizzata</h3>
@@ -34,9 +39,12 @@
   <ng-template pTemplate="content">
     <form [formGroup]="profileForm" (ngSubmit)="sendRequest()">
       <div class="grid">
-        <div class="col-12"><p-colorPicker formControlName="colore_evento"></p-colorPicker> Colore evento </div>
+        <div class="col-12">
+          <p-colorPicker formControlName="colore_evento"></p-colorPicker>
+          Colore evento
+        </div>
 
-        <div class="col-12">  </div>
+        <div class="col-12"></div>
 
         <div class="col-6">
           <div class="p-fluid p-grid">
@@ -50,59 +58,73 @@
         </div>
         <div class="col-6">
         <span class="p-float-label">
-          <p-calendar id="inputdate" formControlName="ora_inizio" [timeOnly]="true" hourFormat="12" inputId="timeonly"></p-calendar>
+          <p-calendar id="inputdate" formControlName="ora_inizio" [timeOnly]="true" hourFormat="12"
+                      inputId="timeonly"></p-calendar>
           <label for="inputdate">Ora inizio</label>
         </span>
         </div>
 
         <div class="col-6">
           <br>
-          <p-cascadeSelect [options]="elencoDomande!" formControlName="domanda_scelta" optionLabel="id" optionGroupLabel="tipo"
-                           [optionGroupChildren]="['domande']" [style]="{'minWidth': '14rem'}" placeholder="Domanda"></p-cascadeSelect>
+          <p-cascadeSelect [options]="elencoDomande!" formControlName="domanda_scelta" optionLabel="id"
+                           optionGroupLabel="tipo"
+                           [optionGroupChildren]="['domande']" [style]="{'minWidth': '14rem'}"
+                           placeholder="Domanda"></p-cascadeSelect>
 
         </div>
         <div class="col-6">
           <br>
           <span class="p-float-label">
-          <p-inputNumber formControlName="durata_evento" id="inputdurata" [showButtons]="true" [size]="7" [min]="30" [step]="15" ></p-inputNumber>
+          <p-inputNumber formControlName="durata_evento" id="inputdurata" [showButtons]="true" [size]="7" [min]="30"
+                         [step]="15"></p-inputNumber>
           <label for="inputdurata">Durata (min)</label>
         </span>
         </div>
 
-        <div class="col-12"> </div>
+        <div class="col-12"></div>
 
         <div class="col-6">
-          Ripeti ogni <p-inputNumber formControlName="repetitionNumber" [showButtons]="true" [size]="1" [min]="1" ></p-inputNumber>
+          Ripeti ogni
+          <p-inputNumber formControlName="repetitionNumber" [showButtons]="true" [size]="1" [min]="1"></p-inputNumber>
         </div>
         <div class="col-6">
-          <p-dropdown [options]="instanceType" formControlName="selectedInstance" id="inputistanza" optionLabel="name" [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()" ></p-dropdown>
+          <p-dropdown [options]="instanceType" formControlName="selectedInstance" id="inputistanza" optionLabel="name"
+                      [showClear]="true" placeholder="Istanza" (onChange)="unlockElements()"></p-dropdown>
         </div>
 
-        <div class="col-12" [hidden]="disableDayOftheWeek"> Si ripete il  </div>
-        <div class="col-12" [hidden]="disableDayOftheWeek"> <p-selectButton [options]="days" formControlName="selectedDays" optionLabel="name" optionValue="code" [multiple]="true"></p-selectButton></div>
+        <div class="col-12" [hidden]="disableDayOftheWeek"> Si ripete il</div>
+        <div class="col-12" [hidden]="disableDayOftheWeek">
+          <p-selectButton [options]="days" formControlName="selectedDays" optionLabel="name" optionValue="code"
+                          [multiple]="true"></p-selectButton>
+        </div>
 
-        <div class="col-12"> </div>
+        <div class="col-12"></div>
 
         <div class="col-5">
           <div class="p-field-radiobutton">
-            <p-radioButton name="endInstance" value="Data" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
-            <label >Data</label>
+            <p-radioButton name="endInstance" value="Data" formControlName="endInstance"
+                           (onClick)="unlockElements()"></p-radioButton>
+            <label>Data</label>
           </div>
         </div>
         <div class="col-7">
           <div class="p-field p-col-12 p-md-4">
-            <p-calendar appendTo="body" formControlName="until_date_picked" [minDate]="selectedDate" [readonlyInput]="true" [showIcon]="true" inputId="min-max" [disabled]="disableDP" ></p-calendar>
+            <p-calendar appendTo="body" formControlName="until_date_picked" [minDate]="selectedDate"
+                        [readonlyInput]="true" [showIcon]="true" inputId="min-max" [disabled]="disableDP"></p-calendar>
           </div>
         </div>
 
         <div class="col-5">
           <div class="p-field-radiobutton">
-            <p-radioButton name="endInstance" value="Dopo" formControlName="endInstance" (onClick)="unlockElements()"></p-radioButton>
-            <label >Dopo</label>
+            <p-radioButton name="endInstance" value="Dopo" formControlName="endInstance"
+                           (onClick)="unlockElements()"></p-radioButton>
+            <label>Dopo</label>
           </div>
         </div>
         <div class="col-7">
-          <p-inputNumber formControlName="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0" [disabled]="disableOcc"></p-inputNumber> Occorrenze
+          <p-inputNumber formControlName="occurrencyNumber" [showButtons]="true" [size]="1" [min]="0"
+                         [disabled]="disableOcc"></p-inputNumber>
+          Occorrenze
         </div>
 
 
@@ -114,5 +136,23 @@
     <button pButton type="submit" label="Salva" (click)="salvaEvento()"></button>
     <button pButton type="button" label="Annulla" class="p-button-danger" (click)="closeDialog()"></button>
   </ng-template>
+
+</p-dialog>
+
+
+<p-dialog header="Dettaglio" [(visible)]="displayDetailModal" [modal]="true" [style]="{width: '50vw'}"
+          [draggable]="false" [resizable]="false">
+  <div class="p-m-0" *ngIf="this.selectedReminderNADetail">
+    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderNADetail!.structureDto!.idQuestionary}}</p>
+    <p><span class="font-bold">Data: </span>{{this.selectedReminderNADetail!.reminderDto!.r_dt_start}}</p>
+    <p><span class="font-bold">Ora: </span></p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto!.event_duration}}</p>
+  </div>
+
+  <div class="p-m-0" *ngIf="this.selectedReminderQDetail">
+    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderQDetail!.questionid}}</p>
+    <p><span class="font-bold">Data: </span>{{this.selectedReminderQDetail!.date |  date:'long'}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration}}</p>
+  </div>
 
 </p-dialog>

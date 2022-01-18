@@ -1,7 +1,7 @@
-import { Component, OnInit, ViewChild } from '@angular/core';
+import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
-import {ByWeekday, Frequency, RRule} from "rrule";
-import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
+import {Frequency, RRule} from "rrule";
+import {HttpClient, HttpHeaders} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import {UtilsService} from "../../utils.service";
@@ -14,7 +14,7 @@ const httpOptions = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE',
     'email': 'admin@example.com',
-    'password':'superPss'
+    'password': 'superPss'
   })
 };
 
@@ -41,7 +41,7 @@ interface ReminderDto {
   r_byhour?: string,
   r_byminute?: string,
   r_byseconds?: string,
-  r_string_rule?:string
+  r_string_rule?: string
 }
 
 interface StructureDto {
@@ -53,7 +53,7 @@ interface StructureDto {
 }
 
 interface StrRemDto {
-  id?:number,
+  id?: number,
   id_structure?: number,
   id_reminder?: number,
   approved?: string,
@@ -62,8 +62,8 @@ interface StrRemDto {
   event_color?: string,
 }
 
-interface NewReminderDTO{
-  reminderDto:ReminderDto,
+interface NewReminderDTO {
+  reminderDto: ReminderDto,
   strsRemsDto: StrRemDto,
   structureDto: StructureDto
 }
@@ -71,11 +71,11 @@ interface NewReminderDTO{
 interface StrsRemsDto {
   creator: string,
   event_duration: number,
-  event_color:string
+  event_color: string
 }
 
-interface Questionnaire{
-  id: number,
+interface Questionnaire {
+  id: string,
   date: string,
   description: string,
   duration: number,
@@ -87,7 +87,7 @@ interface Questionnaire{
   timeinterval: number
 }
 
-interface Question{
+interface Question {
   id: number,
   content: string,
   date: string,
@@ -95,14 +95,14 @@ interface Question{
   name: string
 }
 
-interface GroupedQuestion{
+interface GroupedQuestion {
   tipo: string,
   domande: Array<Question>
 }
 
 interface daysOfTheWeek {
   name: string,
-  code:  number
+  code: number
 }
 
 interface InstancesType {
@@ -114,7 +114,7 @@ interface InstancesType {
   selector: 'app-schedule-checker',
   templateUrl: './schedule-checker.component.html',
   styleUrls: ['./schedule-checker.component.scss'],
-  providers: [ConfirmationService,MessageService]
+  providers: [ConfirmationService, MessageService]
 })
 
 export class ScheduleCheckerComponent implements OnInit {
@@ -135,11 +135,14 @@ export class ScheduleCheckerComponent implements OnInit {
   questionariesList?: Array<Questionnaire>;
   questionList?: Array<Question>;
   elencoDomande?: any[] = new Array<GroupedQuestion>();
-  disableBtnNA:boolean=false;
-  disableBtnQ:boolean=false;
+  disableBtnNA: boolean = false;
+  disableBtnQ: boolean = false;
+  displayDetailModal: boolean = false;
+  selectedReminderNADetail?: NewReminderDTO;
+  selectedReminderQDetail?: Questionnaire;
 
 
-  constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService){
+  constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService) {
 
     this.unlockElements();
     this.instanceType = [
@@ -179,13 +182,13 @@ export class ScheduleCheckerComponent implements OnInit {
   profileForm = new FormGroup({
     title: new FormControl('', Validators.required),
     endInstance: new FormControl(''),
-    selectedInstance: new FormControl(null , Validators.required),
-    repetitionNumber: new FormControl('1' , Validators.required),
+    selectedInstance: new FormControl(null, Validators.required),
+    repetitionNumber: new FormControl('1', Validators.required),
     until_date_picked: new FormControl(''),
     occurrencyNumber: new FormControl(''),
-    selectedDays:new FormControl(null),
+    selectedDays: new FormControl(null),
     ora_inizio: new FormControl(''),
-    durata_evento:new FormControl(null),
+    durata_evento: new FormControl(null),
     domanda_scelta: new FormControl(null),
     colore_evento: new FormControl("")
   });
@@ -201,15 +204,32 @@ export class ScheduleCheckerComponent implements OnInit {
     dayMaxEvents: true,
     weekends: true, // includere i weekend nel calendario
     selectAllow: (info) => {
-      if(UtilsService.selectedDateIsBeforeToday(info.start))
+      if (UtilsService.selectedDateIsBeforeToday(info.start))
         return false;
       return true;
     },
     locale: "it",
-    firstDay: 1
+    firstDay: 1,
+    eventClick: (info) => {
+      this.selectedReminderNADetail = undefined;
+      this.selectedReminderQDetail = undefined;
+      if (this.disableBtnNA) {
+        this.selectedReminderNADetail = this.reminderDtoList!.find(x => x.strsRemsDto.id + "" === info.event.id);
+        console.log(this.selectedReminderNADetail)
+        this.displayDetailModal = true
+      } else if (this.disableBtnQ) {
+
+
+        this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
+        console.log(this.selectedReminderQDetail)
+
+        this.displayDetailModal = true
+      }
+
+    }
   };
 
-  LoadListaEventiNonApprovati(){
+  LoadListaEventiNonApprovati() {
     this.disableBtnNA = true;
     this.disableBtnQ = false;
 
@@ -221,29 +241,41 @@ export class ScheduleCheckerComponent implements OnInit {
       });
   }
 
-  LoadQuestionaries(){
+  LoadQuestionaries() {
     this.disableBtnQ = true;
     this.disableBtnNA = false;
 
     this.getAllQuestionaries();
   }
 
-  showAllRRuleDateList(){
+  showAllRRuleDateList() {
     let eventToAddInCalendar: EventSourceInput = [];
-    for (let r of this.reminderDtoList!){
-      eventToAddInCalendar.push({title: r.reminderDto.r_title, rrule: r.reminderDto.r_string_rule, color: r.strsRemsDto.event_color, duration:r.strsRemsDto.event_duration });
+    for (let r of this.reminderDtoList!) {
+      eventToAddInCalendar.push({
+        id: r.strsRemsDto.id + "",
+        title: r.reminderDto.r_title,
+        rrule: r.reminderDto.r_string_rule,
+        color: r.strsRemsDto.event_color,
+        duration: r.strsRemsDto.event_duration
+      });
     }
-    UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
+    UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);
   }
 
-  showRRuleDateList(id : number | undefined){
+  showRRuleDateList(id: number | undefined) {
     let eventToAddInCalendar: EventSourceInput = [];
     let reminderFound = this.reminderDtoList!.find(x => x.strsRemsDto.id == id);
     console.log(reminderFound);
 
-    eventToAddInCalendar.push({title: reminderFound!.reminderDto.r_title, rrule: reminderFound!.reminderDto.r_string_rule, color: reminderFound!.strsRemsDto.event_color,  duration: reminderFound!.strsRemsDto.event_duration });
+    eventToAddInCalendar.push({
+      id: reminderFound!.strsRemsDto.id + "",
+      title: reminderFound!.reminderDto.r_title,
+      rrule: reminderFound!.reminderDto.r_string_rule,
+      color: reminderFound!.strsRemsDto.event_color,
+      duration: reminderFound!.strsRemsDto.event_duration
+    });
 
-    UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
+    UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);
 
   }
 
@@ -259,18 +291,18 @@ export class ScheduleCheckerComponent implements OnInit {
           .subscribe(data => {
             this.LoadListaEventiNonApprovati();
             UtilsService.refreshCalendarEvents(this.calendarComponent!, null);
-            this.messageService.add({severity:'success', summary: 'Success', detail: 'Evento ricorsivo approvato'});
-          },error => {
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento ricorsivo approvato'});
+          }, error => {
             console.error('There was an error!', error);
           });
       },
-      reject: (type:any) => {
-        switch(type) {
+      reject: (type: any) => {
+        switch (type) {
           case ConfirmEventType.REJECT:
-            this.messageService.add({severity:'error', summary:'Rejected', detail:'Evento ricorsivo non approvato'});
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento ricorsivo non approvato'});
             break;
           case ConfirmEventType.CANCEL:
-            this.messageService.add({severity:'warn', summary:'Cancelled', detail:'Chiusa la finestra di conferma'});
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Chiusa la finestra di conferma'});
             break;
         }
       }
@@ -289,25 +321,29 @@ export class ScheduleCheckerComponent implements OnInit {
           .subscribe(data => {
             this.LoadListaEventiNonApprovati();
             UtilsService.refreshCalendarEvents(this.calendarComponent!, null);
-            this.messageService.add({severity:'success', summary: 'Success', detail: 'Evento ricorsivo Eliminato'});
-          },error => {
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento ricorsivo Eliminato'});
+          }, error => {
             console.error('There was an error!', error);
           });
       },
-      reject: (type:any) => {
-        switch(type) {
+      reject: (type: any) => {
+        switch (type) {
           case ConfirmEventType.REJECT:
-            this.messageService.add({severity:'error', summary:'Rejected', detail:'Evento ricorsivo ancora attivo'});
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento ricorsivo ancora attivo'});
             break;
           case ConfirmEventType.CANCEL:
-            this.messageService.add({severity:'warn', summary:'Cancelled', detail:'Chiusa la finestra Evento ancora attivo'});
+            this.messageService.add({
+              severity: 'warn',
+              summary: 'Cancelled',
+              detail: 'Chiusa la finestra Evento ancora attivo'
+            });
             break;
         }
       }
     });
   }
 
-  formatDateDD_MM_YYYY(date : Date | number[] | undefined){
+  formatDateDD_MM_YYYY(date: Date | number[] | undefined) {
     return UtilsService.formatDateDD_MM_YYYY(date);
   }
 
@@ -347,27 +383,27 @@ export class ScheduleCheckerComponent implements OnInit {
     //informazioni sul questionario.
     let structureDto: StructureDto = {};
     //recupero tipo di domanda in base alla domanda selezionata.
-    let qType = this.elencoDomande?.find(t=>t.domande[0].id == this.profileForm.value.domanda_scelta.id).tipo;
-    switch(qType){
-      case QUESTIONARIES:{
+    let qType = this.elencoDomande?.find(t => t.domande[0].id == this.profileForm.value.domanda_scelta.id).tipo;
+    switch (qType) {
+      case QUESTIONARIES: {
         structureDto = {
           idQuestionary: this.profileForm.value.domanda_scelta.id
         };
         break;
       }
-      case TASKS:{
+      case TASKS: {
         structureDto = {
           idTasks: this.profileForm.value.domanda_scelta.id
         };
         break;
       }
-      case CHALLENGES:{
+      case CHALLENGES: {
         structureDto = {
           idChallenges: this.profileForm.value.domanda_scelta.id
         };
         break;
       }
-      case RANDOMTASKS:{
+      case RANDOMTASKS: {
         structureDto = {
           idRandomTask: this.profileForm.value.domanda_scelta.id
         };
@@ -393,10 +429,18 @@ export class ScheduleCheckerComponent implements OnInit {
 
     this.http.post<any>('http://localhost:8080/reminders/create', body).subscribe(data => {
       console.log(data);
-      this.messageService.add({severity:'success', summary: 'Success', detail: 'Dati salvati in attesa di approvazione.'});
+      this.messageService.add({
+        severity: 'success',
+        summary: 'Success',
+        detail: 'Dati salvati in attesa di approvazione.'
+      });
       this.LoadListaEventiNonApprovati();
-    },error => {
-      this.messageService.add({severity:'error', summary: 'Error', detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'});
+    }, error => {
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'
+      });
     });
   }
 
@@ -435,7 +479,7 @@ export class ScheduleCheckerComponent implements OnInit {
     } else {
       this.disableOcc = true;
     }
-    if ( this.profileForm.value.selectedInstance != null && this.profileForm.value.selectedInstance.code == "RRule.WEEKLY") {
+    if (this.profileForm.value.selectedInstance != null && this.profileForm.value.selectedInstance.code == "RRule.WEEKLY") {
       this.disableDayOftheWeek = false;
     } else {
       this.disableDayOftheWeek = true;
@@ -446,7 +490,7 @@ export class ScheduleCheckerComponent implements OnInit {
   /**
    * Recupero tutte le domande (di questionaries).
    */
-  getAllQestions(){
+  getAllQestions() {
     this.http.get<Array<Question>>("http://localhost:8090/questions", httpOptions)
       .subscribe(data => {
         this.questionList = data;
@@ -463,7 +507,7 @@ export class ScheduleCheckerComponent implements OnInit {
   /**
    * prendo tutti i questionaries
    */
-  getAllQuestionaries(){
+  getAllQuestionaries() {
     this.http.get<Array<Questionnaire>>("http://localhost:8090/questionnaires", httpOptions)
       .subscribe(data => {
         this.questionariesList = data;
@@ -484,9 +528,9 @@ export class ScheduleCheckerComponent implements OnInit {
 
       let reminderStartDate = new Date(questionarie.date);
 
-      eventToAddInCalendar.push({title: questionarie.name, date: reminderStartDate, color: 'Green'});
+      eventToAddInCalendar.push({id: questionarie.id, title: questionarie.name, date: reminderStartDate, color: 'Green'});
     }
-    UtilsService.refreshCalendarEvents(this.calendarComponent!,eventToAddInCalendar);
+    UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);
   }
 
   salvaEvento() {
@@ -497,14 +541,14 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
   handleDateClick(event: any) {
-    if(UtilsService.selectedDateIsAfterToday(event.date)) {
+    if (UtilsService.selectedDateIsAfterToday(event.date)) {
       console.log("click", event)
       this.selectedDate = event.date;
       this.showDialog();
     }
   }
 
-  showDialog(){
+  showDialog() {
     this.display = true;
   }
 
