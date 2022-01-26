@@ -165,7 +165,7 @@ export class CalendarComponent implements OnInit {
     ora_inizio: new FormControl(''),
     durata_evento:new FormControl(null),
     domanda_scelta: new FormControl(null),
-    colore_evento: new FormControl("")
+    colore_evento: new FormControl("#9e3bdb")
   });
 
   //inizializzazione del Calendario
@@ -185,7 +185,8 @@ export class CalendarComponent implements OnInit {
       return true;
     },
     locale: "it",
-    firstDay: 1
+    firstDay: 1,
+    timeZone: "local"
   };
 
 

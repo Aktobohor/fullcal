@@ -1,9 +1,9 @@
 <div class="grid">
-  <div class="col-4">
+  <div class="col-4" >
     <p-button (onClick)="LoadListaEventiNonApprovati()" [disabled]="disableBtnNA">Non Approvati</p-button>
     <p-button (onClick)="LoadQuestionaries()" [disabled]="disableBtnQ">Schedulati</p-button>
     <br><br>
-    <div>RMEMINDERS NON APPROVATI</div>
+    <div class="col">RMEMINDERS NON APPROVATI</div>
     <br>
     <div class="grid">
       <div class="col">TITOLO</div>
@@ -16,7 +16,7 @@
       <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_dt_start)}}</div>
       <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_until)}}</div>
       <div class="col">
-        <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2"
+        <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2" class="p-button-success"
                 (click)="confirmReminder(a.strsRemsDto.id)"></button>
         <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
                 (click)="rejectReminder(a.strsRemsDto.id)"></button>
@@ -66,7 +66,7 @@
 
         <div class="col-6">
           <br>
-          <p-cascadeSelect [options]="elencoDomande!" formControlName="domanda_scelta" optionLabel="id"
+          <p-cascadeSelect [options]="elencoDomande!" appendTo="body" formControlName="domanda_scelta" optionLabel="id"
                            optionGroupLabel="tipo"
                            [optionGroupChildren]="['domande']" [style]="{'minWidth': '14rem'}"
                            placeholder="Domanda"></p-cascadeSelect>
@@ -151,11 +151,49 @@
 
   <div class="p-m-0" *ngIf="this.selectedReminderQDetail">
     <p><span class="font-bold">Domanda: </span>{{this.selectedReminderQDetail!.questionid}}</p>
-    <p><span class="font-bold">Data: </span>{{this.selectedDate.toDateString()}}</p>
+    <p><span class="font-bold">Data: </span>{{this.selectedReminderQDetail!.date | date}}</p>
     <p><span class="font-bold">Ora: </span>{{this.selectedReminderQDetail!.date.substr(11,5)}}</p>
     <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
             (click)="deleteQuestionarie(this.selectedReminderQDetail!.id)"></button>
+    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-icon-only"
+            (click)="editQuestionarie(this.selectedReminderQDetail!.id)"></button>
   </div>
 
 </p-dialog>
+<p-dialog header="Modifica Evento" [(visible)]="editQuestionarieDialog" [modal]="true" [style]="{height: '40vw',width: '25vw'}"
+          [draggable]="false" [resizable]="false">
+  <div class="edit_event">
+    <p-cascadeSelect [options]="elencoDomande!" appendTo="body" [formControl]="domanda_evento" optionLabel="id"
+                     optionGroupLabel="tipo" optionValue="id"
+                     [optionGroupChildren]="['domande']" [style]="{'minWidth': '14rem'}"
+                     placeholder="Domanda">
+    </p-cascadeSelect>
+  </div>
+  <div class="edit_event">
+    <div class="p-field p-col-12 p-md-4">
+      <p-calendar appendTo="body" [formControl]="data_evento"
+                  [readonlyInput]="true" [showIcon]="true" inputId="min-max" ></p-calendar>
+    </div>
+  </div>
+  <div class="edit_event">
+    <span class="p-float-label">
+        <p-calendar id="inputdate_edit" [formControl]="ora_evento" [timeOnly]="true" hourFormat="12"
+                    inputId="timeonly"></p-calendar>
+        <label for="inputdate">Ora inizio</label>
+    </span>
+  </div>
+  <div class="edit_event">
+    <span class="p-float-label">
+        <p-inputNumber [formControl]="durata_evento" id="inputdurata_edit" [showButtons]="true" [size]="7" [min]="30"
+                       [step]="15"></p-inputNumber>
+        <label for="inputdurata">Durata (min)</label>
+    </span>
+  </div>
+  <ng-template pTemplate="footer">
+    <button pButton type="submit" label="Salva Modifiche" (click)="SendModificaEvento()" class="p-button-success"></button>
+    </ng-template>
+</p-dialog>
+
+
+

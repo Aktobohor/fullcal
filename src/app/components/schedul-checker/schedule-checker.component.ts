@@ -140,7 +140,7 @@ export class ScheduleCheckerComponent implements OnInit {
   displayDetailModal: boolean = false;
   selectedReminderNADetail?: NewReminderDTO;
   selectedReminderQDetail?: Questionnaire;
-
+  editQuestionarieDialog: boolean = false;
 
   constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService) {
 
@@ -190,8 +190,13 @@ export class ScheduleCheckerComponent implements OnInit {
     ora_inizio: new FormControl(''),
     durata_evento: new FormControl(null),
     domanda_scelta: new FormControl(null),
-    colore_evento: new FormControl("")
+    colore_evento: new FormControl("#9e3bdb")
   });
+
+  domanda_evento = new FormControl("");
+  data_evento = new FormControl("");
+  ora_evento = new FormControl("");
+  durata_evento = new FormControl("");
 
   calendarOptions: CalendarOptions = {
     plugins: [rrulePlugin, dayGridPlugin],
@@ -210,6 +215,7 @@ export class ScheduleCheckerComponent implements OnInit {
     },
     locale: "it",
     firstDay: 1,
+    timeZone: "local",
     eventClick: (info) => {
       this.selectedReminderNADetail = undefined;
       this.selectedReminderQDetail = undefined;
@@ -415,7 +421,7 @@ export class ScheduleCheckerComponent implements OnInit {
     let strsRemsDto: StrsRemsDto = {
       creator: "manuel@Outlook.it",
       event_duration: this.profileForm.value.durata_evento,
-      event_color: this.profileForm.value.event_color
+      event_color: this.profileForm.value.colore_evento
     };
 
     //oggetto che racchiude le 3 informazioni.
@@ -558,7 +564,6 @@ export class ScheduleCheckerComponent implements OnInit {
 
 
   deleteQuestionarie(id: string) {
-    console.log("confirmReminder");
     this.confirmationService.confirm({
       message: 'Vuoi proseguire con l\'eliminazione dell\'evento? ',
       header: 'Confirma',
@@ -568,7 +573,7 @@ export class ScheduleCheckerComponent implements OnInit {
         this.http.post<any>("http://localhost:8080/reminders/deleteQuestionarieFromid", id)
           .subscribe(data => {
             this.getAllQuestionaries();
-            this.closeDialog();
+            this.displayDetailModal = false;
             this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento eliminato'});
           }, error => {
             console.error('There was an error!', error);
@@ -586,6 +591,71 @@ export class ScheduleCheckerComponent implements OnInit {
       }
     });
 
+
+  }
+
+  editQuestionarie(id: string) {
+    this.displayDetailModal = false;
+    this.editQuestionarieDialog = true;
+    let questionareFound = this.questionariesList!.find(x => x.id == id);
+    let d = new Date(questionareFound!.date);
+    console.log(this.elencoDomande);
+    console.log(questionareFound!.questionid);
+    this.domanda_evento.setValue(questionareFound!.questionid);
+    this.data_evento.setValue(d);
+    this.ora_evento.setValue(d);
+    this.durata_evento.setValue(questionareFound!.duration);
+  }
+
+    SendModificaEvento() {
+
+      let a = new Date(this.ora_evento.value);
+      let b = new Date(this.data_evento.value);
+      b.setHours(a.getHours());
+      b.setMinutes(a.getMinutes());
+
+
+
+    let modifiedQuestionary: Questionnaire = {
+      id:this.selectedReminderQDetail!.id,
+      questionid: this.domanda_evento.value,
+      duration: this.durata_evento.value,
+      name: this.selectedReminderQDetail!.name,
+      date: b.toISOString(),
+      status: this.selectedReminderQDetail!.status,
+      target:this.selectedReminderQDetail!.target,
+      ordering:this.selectedReminderQDetail!.ordering,
+      timeinterval: this.selectedReminderQDetail!.timeinterval,
+      description: this.selectedReminderQDetail!.description
+    }
+    console.log(modifiedQuestionary);
+
+    this.confirmationService.confirm({
+      message: 'Vuoi proseguire con la modifica dell\'evento? ',
+      header: 'Confirma',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        console.log("post");
+        this.http.post<any>("http://localhost:8080/reminders/modificaQuestionarie", modifiedQuestionary)
+          .subscribe(data => {
+            this.getAllQuestionaries();
+            this.editQuestionarieDialog = false;
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento eliminato'});
+          }, error => {
+            console.error('There was an error!', error);
+          });
+      },
+      reject: (type: any) => {
+        switch (type) {
+          case ConfirmEventType.REJECT:
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento non eliminato'});
+            break;
+          case ConfirmEventType.CANCEL:
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Ciusa la finestra di eliminazione'});
+            break;
+        }
+      }
+    });
 
   }
 }
