@@ -139,4 +139,11 @@ export class UtilsService {
     return "00/00/0000";
   }
 
+  static formatDateDD_MM_YYYY_FromString(date : string | undefined): string {
+    if (date != undefined) {
+      let a = date.substr(0,10);
+      return a.substr(8,2)+"/"+a.substr(5,2)+"/"+a.substr(0,4);
+    }
+    return "00/00/0000";
+  }
 }

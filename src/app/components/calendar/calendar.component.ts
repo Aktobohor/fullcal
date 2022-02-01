@@ -24,7 +24,7 @@ const httpOptions = {
 };
 
 interface Questionnaire{
-  id: number,
+  id: string,
   date: string,
   description: string,
   duration: number,
@@ -131,6 +131,8 @@ export class CalendarComponent implements OnInit {
   questionList?: Array<Question>;
   elencoDomande?: any[] = new Array<GroupedQuestion>();
   color: string = "";
+  selectedReminderQDetail?: Questionnaire;
+  displayDetailModal = false;
 
   constructor(private http: HttpClient, private messageService: MessageService) {
     this.unlockElements();
@@ -165,7 +167,7 @@ export class CalendarComponent implements OnInit {
     ora_inizio: new FormControl(''),
     durata_evento:new FormControl(null),
     domanda_scelta: new FormControl(null),
-    colore_evento: new FormControl("#9e3bdb")
+    colore_evento: new FormControl("#FF0000")
   });
 
   //inizializzazione del Calendario
@@ -178,16 +180,24 @@ export class CalendarComponent implements OnInit {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: true,
+    nextDayThreshold: "24:00:00",
     weekends: true, // includere i weekend nel calendario
     selectAllow: (info) => {
       if(UtilsService.selectedDateIsBeforeToday(info.start))
         return false;
       return true;
     },
+    eventClick: (info) => {
+      this.selectedReminderQDetail = undefined;
+      this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
+      console.log(info.event.id)
+      console.log(this.selectedReminderQDetail)
+      this.displayDetailModal = true
+    },
     locale: "it",
-    firstDay: 1,
-    timeZone: "local"
+    firstDay: 1
   };
+
 
 
   ngOnInit(): void {
@@ -268,7 +278,7 @@ export class CalendarComponent implements OnInit {
     */
       let reminderStartDate = new Date(questionarie.date);
 
-      eventToAddInCalendar.push({title: questionarie.name, date:reminderStartDate , color: this.color, duration:600});
+      eventToAddInCalendar.push({id: questionarie.id, title: questionarie.name, date:reminderStartDate , color: this.color, duration:600});
       //console.log(questionarie.date);
     }
     //load eventi su calendario
@@ -545,5 +555,9 @@ export class CalendarComponent implements OnInit {
           //console.log(data);
           this.color = data;
       });
+  }
+
+  formatDate(date: string | undefined){
+    return UtilsService.formatDateDD_MM_YYYY_FromString(date);
   }
 }

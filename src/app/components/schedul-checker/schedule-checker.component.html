@@ -19,7 +19,7 @@
         <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2" class="p-button-success"
                 (click)="confirmReminder(a.strsRemsDto.id)"></button>
         <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
-                (click)="rejectReminder(a.strsRemsDto.id)"></button>
+                (click)="deleteReminder(a.strsRemsDto.id)"></button>
       </div>
     </div>
   </div>
@@ -143,15 +143,15 @@
 <p-dialog header="Dettaglio" [(visible)]="displayDetailModal" [modal]="true" [style]="{width: '25vw'}"
           [draggable]="false" [resizable]="false">
   <div class="p-m-0" *ngIf="this.selectedReminderNADetail">
-    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderNADetail!.structureDto!.idQuestionary}}</p>
-    <p><span class="font-bold">Data: </span>{{this.selectedDate.toDateString()}}</p>
+    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderNADetail!.structureDto.idQuestionary}}</p>
+    <p><span class="font-bold">Prima Data: </span>{{formatDateDD_MM_YYYY(this.selectedReminderNADetail!.reminderDto.r_dt_start)}}</p>
     <p><span class="font-bold">Ora: </span>{{this.selectedReminderNADetail!.reminderDto.r_byhour+":"+this.selectedReminderNADetail!.reminderDto.r_byminute}}</p>
-    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto!.event_duration+" min"}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto.event_duration+" min"}}</p>
   </div>
 
   <div class="p-m-0" *ngIf="this.selectedReminderQDetail">
     <p><span class="font-bold">Domanda: </span>{{this.selectedReminderQDetail!.questionid}}</p>
-    <p><span class="font-bold">Data: </span>{{this.selectedReminderQDetail!.date | date}}</p>
+    <p><span class="font-bold">Data: </span>{{formatDate(this.selectedReminderQDetail!.date)}}</p>
     <p><span class="font-bold">Ora: </span>{{this.selectedReminderQDetail!.date.substr(11,5)}}</p>
     <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"

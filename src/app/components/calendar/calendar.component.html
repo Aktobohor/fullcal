@@ -88,5 +88,17 @@
   </ng-template>
 
 </p-dialog>
+<p-dialog header="Dettaglio" [(visible)]="displayDetailModal" [modal]="true" [style]="{width: '25vw'}"
+          [draggable]="false" [resizable]="false">
+  <div class="p-m-0" *ngIf="this.selectedReminderQDetail">
+    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderQDetail!.questionid}}</p>
+    <p><span class="font-bold">Data: </span>{{formatDate(this.selectedReminderQDetail!.date)}}</p>
+    <p><span class="font-bold">Ora: </span>{{this.selectedReminderQDetail!.date.substr(11,5)}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
+  </div>
+</p-dialog>
+
+
 <p-toast></p-toast>
 <full-calendar [options]="calendarOptions" #calendar></full-calendar>
+

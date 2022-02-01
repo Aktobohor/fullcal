@@ -1,7 +1,7 @@
 import {Component, OnInit, ViewChild} from '@angular/core';
 import {CalendarOptions, EventSourceInput, formatDate, FullCalendarComponent} from "@fullcalendar/angular";
 import {Frequency, RRule} from "rrule";
-import {HttpClient, HttpHeaders} from '@angular/common/http';
+import {HttpClient, HttpHeaders, HttpParams} from '@angular/common/http';
 import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import {UtilsService} from "../../utils.service";
@@ -190,7 +190,7 @@ export class ScheduleCheckerComponent implements OnInit {
     ora_inizio: new FormControl(''),
     durata_evento: new FormControl(null),
     domanda_scelta: new FormControl(null),
-    colore_evento: new FormControl("#9e3bdb")
+    colore_evento: new FormControl("#FF0000")
   });
 
   domanda_evento = new FormControl("");
@@ -207,6 +207,7 @@ export class ScheduleCheckerComponent implements OnInit {
     selectable: true,
     selectMirror: true,
     dayMaxEvents: true,
+    nextDayThreshold: "24:00:00",
     weekends: true, // includere i weekend nel calendario
     selectAllow: (info) => {
       if (UtilsService.selectedDateIsBeforeToday(info.start))
@@ -257,6 +258,7 @@ export class ScheduleCheckerComponent implements OnInit {
   showAllRRuleDateList() {
     let eventToAddInCalendar: EventSourceInput = [];
     for (let r of this.reminderDtoList!) {
+      console.log(r.reminderDto.r_string_rule);
       eventToAddInCalendar.push({
         id: r.strsRemsDto.id + "",
         title: r.reminderDto.r_title,
@@ -271,7 +273,7 @@ export class ScheduleCheckerComponent implements OnInit {
   showRRuleDateList(id: number | undefined) {
     let eventToAddInCalendar: EventSourceInput = [];
     let reminderFound = this.reminderDtoList!.find(x => x.strsRemsDto.id == id);
-    console.log(reminderFound);
+    console.log(reminderFound!.reminderDto.r_string_rule);
 
     eventToAddInCalendar.push({
       id: reminderFound!.strsRemsDto.id + "",
@@ -315,44 +317,13 @@ export class ScheduleCheckerComponent implements OnInit {
     });
   }
 
-  rejectReminder(id: number | undefined) {
-    console.log("DeleteReminder");
-    this.confirmationService.confirm({
-      message: 'vuoi eliminare la schedulazione? ',
-      header: 'Confirma',
-      icon: 'pi pi-exclamation-triangle',
-      accept: () => {
-        console.log("post");
-        this.http.post<any>("http://localhost:8080/reminders/deleteFromId", id)
-          .subscribe(data => {
-            this.LoadListaEventiNonApprovati();
-            UtilsService.refreshCalendarEvents(this.calendarComponent!, null);
-            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Evento ricorsivo Eliminato'});
-          }, error => {
-            console.error('There was an error!', error);
-          });
-      },
-      reject: (type: any) => {
-        switch (type) {
-          case ConfirmEventType.REJECT:
-            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento ricorsivo ancora attivo'});
-            break;
-          case ConfirmEventType.CANCEL:
-            this.messageService.add({
-              severity: 'warn',
-              summary: 'Cancelled',
-              detail: 'Chiusa la finestra Evento ancora attivo'
-            });
-            break;
-        }
-      }
-    });
-  }
-
   formatDateDD_MM_YYYY(date: Date | number[] | undefined) {
     return UtilsService.formatDateDD_MM_YYYY(date);
   }
 
+  formatDate(date: string | undefined){
+    return UtilsService.formatDateDD_MM_YYYY_FromString(date);
+  }
   /**
    * invio richiesta di creazione delle ricorrenze di un evento in base alle info inserite
    */
@@ -370,6 +341,8 @@ export class ScheduleCheckerComponent implements OnInit {
       byminute: this.profileForm.value.ora_inizio.getMinutes(),
       bysecond: this.profileForm.value.ora_inizio.getSeconds()
     });
+
+    console.log(rule.toString());
 
     //informazioni delle RRULE che possono essere utilizzate per creare la RRULE.
     let reminderDto: ReminderDto = {
@@ -595,6 +568,7 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
   editQuestionarie(id: string) {
+    console.log(this.selectedReminderQDetail!.date.substr(0,10));
     this.displayDetailModal = false;
     this.editQuestionarieDialog = true;
     let questionareFound = this.questionariesList!.find(x => x.id == id);
@@ -651,11 +625,41 @@ export class ScheduleCheckerComponent implements OnInit {
             this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Evento non eliminato'});
             break;
           case ConfirmEventType.CANCEL:
-            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Ciusa la finestra di eliminazione'});
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Chiusa la finestra di eliminazione'});
             break;
         }
       }
     });
 
   }
+
+  deleteReminder(id: number|undefined) {
+    this.confirmationService.confirm({
+      message: 'Vuoi proseguire con la modifica dell\'evento? ',
+      header: 'Confirma',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        console.log("post");
+        this.http.post<any>("http://localhost:8080/reminders/deleteFromId", id)
+          .subscribe(data => {
+            this.LoadListaEventiNonApprovati();
+            this.displayDetailModal = false;
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Ricorrenze eliminate'});
+          }, error => {
+            console.error('There was an error!', error);
+          });
+      },
+      reject: (type: any) => {
+        switch (type) {
+          case ConfirmEventType.REJECT:
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Ricorrenze non eliminate'});
+            break;
+          case ConfirmEventType.CANCEL:
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Chiusa la finestra di eliminazione'});
+            break;
+        }
+      }
+    });
+  }
+
 }
