@@ -1,3 +1,34 @@
+<div class="grid">
+  <div class="col-4" >
+    <!--<p-button (onClick)="LoadListaEventiNonApprovati()" [disabled]="disableBtnNA">Non Approvati</p-button>-->
+    <p-button (onClick)="LoadQuestionaries()" >Schedulati</p-button>
+    <br><br>
+    <div class="col">REMINDERS NON APPROVATI</div>
+    <br>
+    <div class="grid">
+      <div class="col">TITOLO</div>
+      <div class="col">INIZIO</div>
+      <div class="col">FINE</div>
+      <div class="col"></div>
+    </div>
+    <div class="grid" *ngFor="let a of newReminderDtoList" (click)="showRRuleDateList(a.strsRemsDto.id)">
+      <div class="col">{{a.reminderDto.r_title}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_dt_start)}}</div>
+      <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_until)}}</div>
+      <div class="col">
+        <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
+                (click)="deleteReminder(a.strsRemsDto.id)"></button>
+      </div>
+    </div>
+  </div>
+  <div class="col-8">
+    <p-confirmDialog [style]="{width: '50vw'}" [baseZIndex]="10000"
+                     rejectButtonStyleClass="p-button-text"></p-confirmDialog>
+    <p-toast></p-toast>
+    <full-calendar [options]="calendarOptions" #calendar></full-calendar>
+
+  </div>
+</div>
 <p-dialog header="Inserisci un evento" [(visible)]="display" [style]="{width:'500px'}" [modal]="true" position="top" >
 
     <ng-template pTemplate="header">
@@ -96,9 +127,15 @@
     <p><span class="font-bold">Ora: </span>{{this.selectedReminderQDetail!.date.substr(11,5)}}</p>
     <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
   </div>
+
+  <div class="p-m-0" *ngIf="this.selectedReminderNADetail">
+    <p><span class="font-bold">Domanda: </span>{{this.selectedReminderNADetail!.structureDto.idQuestionary}}</p>
+    <p><span class="font-bold">Prima Data: </span>{{formatDateDD_MM_YYYY(this.selectedReminderNADetail!.reminderDto.r_dt_start)}}</p>
+    <p><span class="font-bold">Ora: </span>{{this.selectedReminderNADetail!.reminderDto.r_byhour+":"+this.selectedReminderNADetail!.reminderDto.r_byminute}}</p>
+    <p><span class="font-bold">Durata: </span>{{this.selectedReminderNADetail!.strsRemsDto.event_duration+" min"}}</p>
+  </div>
+
 </p-dialog>
 
-
 <p-toast></p-toast>
-<full-calendar [options]="calendarOptions" #calendar></full-calendar>
 

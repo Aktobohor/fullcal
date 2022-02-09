@@ -6,7 +6,7 @@ import rrulePlugin from "@fullcalendar/rrule";
 import dayGridPlugin from "@fullcalendar/daygrid";
 import {FormControl, FormGroup, Validators} from '@angular/forms';
 import {UtilsService} from "../../utils.service";
-import {MessageService} from "primeng/api";
+import {ConfirmationService, ConfirmEventType, MessageService} from "primeng/api";
 
 const QUESTIONARIES = "Questionaries";
 const TASKS = "Tasks";
@@ -53,6 +53,22 @@ interface daysOfTheWeek {
   code:  number
 }
 
+interface StrRemDto {
+  id?: number,
+  id_structure?: number,
+  id_reminder?: number,
+  approved?: string,
+  event_duration?: number,
+  creator?: string
+  event_color?: string,
+}
+
+interface NewReminderDTO {
+  reminderDto: ReminderDto,
+  strsRemsDto: StrRemDto,
+  structureDto: StructureDto
+}
+
 interface InstancesType {
   name: string,
   code: string
@@ -96,7 +112,7 @@ interface StrsRemsDto {
 interface NewReminderDTO {
   reminderDto: ReminderDto;
   structureDto: StructureDto;
-  strsRemsDto: StrsRemsDto;
+  strRemsDto: StrsRemsDto;
 }
 
 interface event {
@@ -132,9 +148,11 @@ export class CalendarComponent implements OnInit {
   elencoDomande?: any[] = new Array<GroupedQuestion>();
   color: string = "";
   selectedReminderQDetail?: Questionnaire;
+  selectedReminderNADetail?: NewReminderDTO | undefined;
   displayDetailModal = false;
+  disableBtnNA = false;
 
-  constructor(private http: HttpClient, private messageService: MessageService) {
+  constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService) {
     this.unlockElements();
     this.instanceType = [
       {name: "Giorni", code: "RRule.DAILY"},
@@ -188,14 +206,22 @@ export class CalendarComponent implements OnInit {
       return true;
     },
     eventClick: (info) => {
+      this.selectedReminderNADetail = undefined;
       this.selectedReminderQDetail = undefined;
-      this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
-      console.log(info.event.id)
-      console.log(this.selectedReminderQDetail)
-      this.displayDetailModal = true
-    },
-    locale: "it",
-    firstDay: 1
+      if (this.disableBtnNA) {
+        this.selectedReminderNADetail = this.newReminderDtoList!.find(x => x.strsRemsDto.id + "" === info.event.id);
+        console.log(this.selectedReminderNADetail)
+        this.displayDetailModal = true
+      } else{
+
+
+        this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
+        console.log(this.selectedReminderQDetail)
+
+        this.displayDetailModal = true
+      }
+
+    }
   };
 
 
@@ -207,12 +233,16 @@ export class CalendarComponent implements OnInit {
       minute: '2-digit',
       second: '2-digit'
     });
+    this.disableBtnNA = false;
     this.today = str;
     console.log(this.today);
+
+    this.LoadListaEventiNonApprovati();
 
     this.getAllQuestionaries();
 
     this.getAllQestions();
+
 
     /*this.http.get<Array<ReminderDto>>("http://localhost:8080/reminders/approved")
       .subscribe(data => {
@@ -282,7 +312,9 @@ export class CalendarComponent implements OnInit {
       //console.log(questionarie.date);
     }
     //load eventi su calendario
-    this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);
+    // this.calendarComponent?.getApi().addEventSource(eventToAddInCalendar);//AGGIUNGE EVENTI
+    UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);//REFRESHA IL CALENDARIO
+
   }
 
   /**
@@ -423,7 +455,7 @@ export class CalendarComponent implements OnInit {
       freq: this.getFrequencyFromString(this.profileForm.value.instanceType),
       interval: this.profileForm.value.repetitionNumber,
       dtstart: this.selectedDate!,
-      until: this.profileForm.value.until_date_picked,
+      until: (this.profileForm.value.endInstance == "Data") ? this.profileForm.value.until_date_picked : undefined,
       count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
       byweekday: this.profileForm.value.selectedDays, //array di numeri per creare correttamente la RRule in stringa
       byhour: this.profileForm.value.ora_inizio.getHours(),
@@ -485,7 +517,7 @@ export class CalendarComponent implements OnInit {
     };
 
     //oggetto che racchiude le 3 informazioni.
-    var body: NewReminderDTO = {
+    var body = {
       reminderDto: reminderDto,
       structureDto: structureDto,
       strsRemsDto: strsRemsDto
@@ -559,5 +591,70 @@ export class CalendarComponent implements OnInit {
 
   formatDate(date: string | undefined){
     return UtilsService.formatDateDD_MM_YYYY_FromString(date);
+  }
+
+  LoadListaEventiNonApprovati() {
+
+    this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/notapprovedNEW")
+      .subscribe(data => {
+        this.newReminderDtoList = data;
+        //console.log(data);
+      });
+  }
+
+  LoadQuestionaries() {
+    this.disableBtnNA = false;
+    this.getAllQuestionaries();
+  }
+
+  showRRuleDateList(id: number | undefined) {
+    this.disableBtnNA = true;
+    let eventToAddInCalendar: EventSourceInput = [];
+    let reminderFound = this.newReminderDtoList!.find(x => x.strsRemsDto.id == id);
+    console.log(reminderFound!.reminderDto.r_string_rule);
+
+    eventToAddInCalendar.push({
+      id: reminderFound!.strsRemsDto.id + "",
+      title: reminderFound!.reminderDto.r_title,
+      rrule: reminderFound!.reminderDto.r_string_rule,
+      color: reminderFound!.strsRemsDto.event_color,
+      duration: reminderFound!.strsRemsDto.event_duration
+    });
+
+    UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);
+
+  }
+
+  formatDateDD_MM_YYYY(date: Date | number[] | undefined) {
+    return UtilsService.formatDateDD_MM_YYYY(date);
+  }
+
+  deleteReminder(id: number|undefined) {
+    this.confirmationService.confirm({
+      message: 'Vuoi proseguire con la modifica dell\'evento? ',
+      header: 'Confirma',
+      icon: 'pi pi-exclamation-triangle',
+      accept: () => {
+        console.log("post");
+        this.http.post<any>("http://localhost:8080/reminders/deleteFromId", id)
+          .subscribe(data => {
+            this.LoadListaEventiNonApprovati();
+            this.displayDetailModal = false;
+            this.messageService.add({severity: 'success', summary: 'Success', detail: 'Ricorrenze eliminate'});
+          }, error => {
+            console.error('There was an error!', error);
+          });
+      },
+      reject: (type: any) => {
+        switch (type) {
+          case ConfirmEventType.REJECT:
+            this.messageService.add({severity: 'error', summary: 'Rejected', detail: 'Ricorrenze non eliminate'});
+            break;
+          case ConfirmEventType.CANCEL:
+            this.messageService.add({severity: 'warn', summary: 'Cancelled', detail: 'Chiusa la finestra di eliminazione'});
+            break;
+        }
+      }
+    });
   }
 }

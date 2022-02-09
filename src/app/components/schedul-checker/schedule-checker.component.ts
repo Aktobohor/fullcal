@@ -224,9 +224,8 @@ export class ScheduleCheckerComponent implements OnInit {
         this.selectedReminderNADetail = this.reminderDtoList!.find(x => x.strsRemsDto.id + "" === info.event.id);
         console.log(this.selectedReminderNADetail)
         this.displayDetailModal = true
+
       } else if (this.disableBtnQ) {
-
-
         this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
         console.log(this.selectedReminderQDetail)
 
@@ -334,7 +333,7 @@ export class ScheduleCheckerComponent implements OnInit {
       freq: this.getFrequencyFromString(this.profileForm.value.instanceType),
       interval: this.profileForm.value.repetitionNumber,
       dtstart: this.selectedDate!,
-      until: this.profileForm.value.until_date_picked,
+      until: (this.profileForm.value.endInstance == "Data") ? this.profileForm.value.until_date_picked : undefined,
       count: (this.profileForm.value.endInstance == "Dopo") ? this.profileForm.value.occurrencyNumber : undefined,
       byweekday: this.profileForm.value.selectedDays, //array di numeri per creare correttamente la RRule in stringa
       byhour: this.profileForm.value.ora_inizio.getHours(),
