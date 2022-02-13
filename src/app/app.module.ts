@@ -26,6 +26,7 @@ import {ConfirmDialogModule} from "primeng/confirmdialog";
 import {ToastModule} from "primeng/toast";
 import {CascadeSelectModule} from "primeng/cascadeselect";
 import {ColorPickerModule} from "primeng/colorpicker";
+import {UserEventSelectorComponent} from "./components/user_event_selector/user_event_selector.component";
 
 
 // @ts-ignore
@@ -41,7 +42,7 @@ FullCalendarModule.registerPlugins([ // register FullCalendar plugins
     AppComponent,
     CalendarComponent,
     ScheduleCheckerComponent,
-
+    UserEventSelectorComponent
   ],
   imports: [
     BrowserModule,

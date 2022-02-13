@@ -22,6 +22,7 @@ const QUESTIONARIES = "Questionaries";
 const TASKS = "Tasks";
 const CHALLENGES = "Challenges";
 const RANDOMTASKS = "RandomTask";
+const USER = "US12345";
 
 interface ReminderDto {
   id?: number,
@@ -57,7 +58,6 @@ interface StrRemDto {
   id_structure?: number,
   id_reminder?: number,
   approved?: string,
-  user_approvation?: string,
   event_duration?: number,
   creator?: string
   event_color?: string,
@@ -113,12 +113,12 @@ interface InstancesType {
 
 @Component({
   selector: 'app-schedule-checker',
-  templateUrl: './schedule-checker.component.html',
-  styleUrls: ['./schedule-checker.component.scss'],
+  templateUrl: './user_event_selector.component.html',
+  styleUrls: ['./user_event_selector.component.scss'],
   providers: [ConfirmationService, MessageService]
 })
 
-export class ScheduleCheckerComponent implements OnInit {
+export class UserEventSelectorComponent implements OnInit {
   @ViewChild('calendar') calendarComponent?: FullCalendarComponent;
   reminderDtoList?: Array<NewReminderDTO>;
   today = "";
@@ -142,7 +142,8 @@ export class ScheduleCheckerComponent implements OnInit {
   selectedReminderNADetail?: NewReminderDTO;
   selectedReminderQDetail?: Questionnaire;
   editQuestionarieDialog: boolean = false;
-  editEvent:boolean = false;
+  editEvent: boolean = false;
+  user: string = USER;
 
   constructor(private http: HttpClient, private confirmationService: ConfirmationService, private messageService: MessageService) {
 
@@ -169,6 +170,7 @@ export class ScheduleCheckerComponent implements OnInit {
 
   ngOnInit(): void {
     this.LoadListaEventiNonApprovati();
+    this.LoadQuestionaries();
     let str = formatDate(new Date(), {
       hour: 'numeric',
       minute: '2-digit',
@@ -176,7 +178,6 @@ export class ScheduleCheckerComponent implements OnInit {
     });
     this.today = str;
     console.log(this.today);
-
     this.getAllQestions();
   }
 
@@ -203,7 +204,7 @@ export class ScheduleCheckerComponent implements OnInit {
   calendarOptions: CalendarOptions = {
     plugins: [rrulePlugin, dayGridPlugin],
     initialView: 'dayGridMonth',
-    dateClick: this.handleDateClick.bind(this), // bind is important!
+    //dateClick: this.handleDateClick.bind(this), // bind is important!
     events: [],
     editable: true,
     selectable: true,
@@ -222,6 +223,7 @@ export class ScheduleCheckerComponent implements OnInit {
     eventClick: (info) => {
       this.selectedReminderNADetail = undefined;
       this.selectedReminderQDetail = undefined;
+
       if (this.disableBtnNA) {
         this.selectedReminderNADetail = this.reminderDtoList!.find(x => x.strsRemsDto.id + "" === info.event.id);
         console.log(this.selectedReminderNADetail)
@@ -230,6 +232,7 @@ export class ScheduleCheckerComponent implements OnInit {
       } else if (this.disableBtnQ) {
         this.selectedReminderQDetail = this.questionariesList!.find(x => x.id + "" === info.event.id)
         console.log(this.selectedReminderQDetail)
+        //abilito o disabilito i bottoni per eliminare o modificare l'evento.
         if(UtilsService.selectedDateIsAfterToday(UtilsService.CreateDateFromString(this.selectedReminderQDetail?.date))){
           this.editEvent = false;
           console.log("evento dopo oggi");
@@ -244,18 +247,16 @@ export class ScheduleCheckerComponent implements OnInit {
   };
 
   LoadListaEventiNonApprovati() {
-    this.disableBtnNA = true;
-    this.disableBtnQ = false;
-
-    this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/notapprovedNEW")
+    this.http.get<Array<NewReminderDTO>>("http://localhost:8080/reminders/notapprovedfromuserNEW")
       .subscribe(data => {
         this.reminderDtoList = data;
         //console.log(data);
-        this.showAllRRuleDateList();
+        //this.showAllRRuleDateList();
       });
   }
 
   LoadQuestionaries() {
+    console.log("EVENTI SCHEDULATI");
     this.disableBtnQ = true;
     this.disableBtnNA = false;
 
@@ -263,6 +264,8 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
   showAllRRuleDateList() {
+    this.disableBtnNA = true;
+    this.disableBtnQ = false;
     let eventToAddInCalendar: EventSourceInput = [];
     for (let r of this.reminderDtoList!) {
       console.log(r.reminderDto.r_string_rule);
@@ -297,6 +300,7 @@ export class ScheduleCheckerComponent implements OnInit {
   }
 
   confirmReminder(id: number | undefined) {
+    const params = new HttpParams().append('user', USER);
     console.log("confirmReminder");
     this.confirmationService.confirm({
       message: 'vuoi approvare la schedulazione? ',
@@ -304,7 +308,7 @@ export class ScheduleCheckerComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         console.log("post");
-        this.http.post<any>("http://localhost:8080/reminders/adminConfirmFromId", id)
+        this.http.post<any>("http://localhost:8080/reminders/confirmFromId", id,{params})
           .subscribe(data => {
             this.LoadListaEventiNonApprovati();
             UtilsService.refreshCalendarEvents(this.calendarComponent!, null);
@@ -649,7 +653,7 @@ export class ScheduleCheckerComponent implements OnInit {
       icon: 'pi pi-exclamation-triangle',
       accept: () => {
         console.log("post");
-        this.http.post<any>("http://localhost:8080/reminders/deleteFromId", id)
+        this.http.post<any>("http://localhost:8080/reminders/userDeleteFromId", id)
           .subscribe(data => {
             this.LoadListaEventiNonApprovati();
             this.displayDetailModal = false;

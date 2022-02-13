@@ -3,6 +3,7 @@ import {EventSourceInput, FullCalendarComponent} from "@fullcalendar/angular";
 import {CalendarComponent} from "./components/calendar/calendar.component";
 import {HttpClient} from "@angular/common/http";
 import {ByWeekday, Frequency, RRule} from "rrule";
+import {BigInteger} from "@angular/compiler/src/i18n/big_integer";
 
 interface ReminderDto {
   id?: number,
@@ -145,5 +146,13 @@ export class UtilsService {
       return a.substr(8,2)+"/"+a.substr(5,2)+"/"+a.substr(0,4);
     }
     return "00/00/0000";
+  }
+
+  static CreateDateFromString(date : string | undefined): Date {
+    if (date != undefined) {
+      let a = date.substr(0,10);
+      return new Date(a);
+    }
+    return new Date();
   }
 }

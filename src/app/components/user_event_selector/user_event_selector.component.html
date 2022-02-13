@@ -1,9 +1,9 @@
 <div class="grid">
   <div class="col-4" >
-    <p-button (onClick)="LoadListaEventiNonApprovati()" [disabled]="disableBtnNA">Non Approvati</p-button>
+    <p-button (onClick)="showAllRRuleDateList();" [disabled]="disableBtnNA">Non Approvati</p-button>
     <p-button (onClick)="LoadQuestionaries()" [disabled]="disableBtnQ">Schedulati</p-button>
     <br><br>
-    <div class="col">EVENTI NON APPROVATI</div>
+    <div class="col">EVENTI NON APPROVATI DA UTENTE: {{this.user}}</div>
     <br>
     <div class="grid">
       <div class="col">TITOLO</div>
@@ -15,7 +15,7 @@
       <div class="col">{{a.reminderDto.r_title}}</div>
       <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_dt_start)}}</div>
       <div class="col">{{formatDateDD_MM_YYYY(a.reminderDto.r_until)}}</div>
-      <div class="col">
+      <div class="col" >
         <button pButton pRipple type="button" icon="pi pi-check" class="p-mr-2" class="p-button-success"
                 (click)="confirmReminder(a.strsRemsDto.id)"></button>
         <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
@@ -156,9 +156,9 @@
     <p><span class="font-bold">Durata: </span>{{this.selectedReminderQDetail!.duration+" min"}}</p>
     <p [hidden]="editEvent">
     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger"
-            (click)="deleteQuestionarie(this.selectedReminderQDetail!.id)"></button>
+            (click)="deleteQuestionarie(this.selectedReminderQDetail!.id)"  ></button>
     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-button-icon-only"
-            (click)="editQuestionarie(this.selectedReminderQDetail!.id)"></button>
+            (click)="editQuestionarie(this.selectedReminderQDetail!.id)" ></button>
     </p>
   </div>
 
