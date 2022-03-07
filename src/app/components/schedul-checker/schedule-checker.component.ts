@@ -218,7 +218,7 @@ export class ScheduleCheckerComponent implements OnInit {
     },
     locale: "it",
     firstDay: 1,
-    timeZone: "local",
+    timeZone: "UTC",
     eventClick: (info) => {
       this.selectedReminderNADetail = undefined;
       this.selectedReminderQDetail = undefined;

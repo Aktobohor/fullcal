@@ -219,7 +219,7 @@ export class UserEventSelectorComponent implements OnInit {
     },
     locale: "it",
     firstDay: 1,
-    timeZone: "local",
+    timeZone: "UTC",
     eventClick: (info) => {
       this.selectedReminderNADetail = undefined;
       this.selectedReminderQDetail = undefined;
@@ -341,7 +341,7 @@ export class UserEventSelectorComponent implements OnInit {
    * invio richiesta di creazione delle ricorrenze di un evento in base alle info inserite
    */
   sendRequest() {
-
+    console.log(this.selectedDate)
     //necessaria per generare la RRULE come stringa da salvare a DB.
     let rule = new RRule({
       freq: this.getFrequencyFromString(this.profileForm.value.instanceType),
@@ -519,7 +519,7 @@ export class UserEventSelectorComponent implements OnInit {
     for (let questionarie of data) {
 
       let reminderStartDate = new Date(questionarie.date);
-
+      reminderStartDate.setHours(reminderStartDate.getHours() + 1);
       eventToAddInCalendar.push({id: questionarie.id, title: questionarie.name, date: reminderStartDate, color: 'Green'});
     }
     UtilsService.refreshCalendarEvents(this.calendarComponent!, eventToAddInCalendar);

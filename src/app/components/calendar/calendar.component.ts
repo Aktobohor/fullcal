@@ -199,6 +199,9 @@ export class CalendarComponent implements OnInit {
     selectMirror: true,
     dayMaxEvents: true,
     nextDayThreshold: "24:00:00",
+    locale: "it",
+    firstDay: 1,
+    timeZone: 'UTC',
     weekends: true, // includere i weekend nel calendario
     selectAllow: (info) => {
       if(UtilsService.selectedDateIsBeforeToday(info.start))
@@ -531,6 +534,8 @@ export class CalendarComponent implements OnInit {
     },error => {
       this.messageService.add({severity:'error', summary: 'Error', detail: 'Errore nell\'invio dei dati. Verificare i campi nel form di invio'});
     });
+
+    this.ngOnInit();
   }
 
   salvaEvento() {
